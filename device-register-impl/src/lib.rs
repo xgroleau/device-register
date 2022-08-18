@@ -1,41 +1,37 @@
 #![doc(html_no_source)]
 
+use std::{ops::Add, iter::Inspect};
+
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, LitInt};
+use syn::{DeriveInput};
+use darling::{FromDeriveInput, ToTokens, FromMeta};
+
+
+#[derive(FromDeriveInput)]
+#[darling(attributes(register))]
+struct Register {
+    addr: syn::Lit,
+    ty: Option<syn::Path>,
+}
 
 fn impl_register(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
     let name = &ast.ident;
-    let mut address: Option<u8> = None;
-
-    for attr in ast.clone().attrs {
-        if attr.path.is_ident("address") {
-            let addr: LitInt = attr
-                .parse_args()
-                .expect("The `address` attribute is required");
-            let num: u8 = addr
-                .base10_parse()
-                .expect("The `address` attribute must have a u8 as argument");
-
-            if address.is_some() {
-                panic!("Multiple `address` defined")
-            }
-            address = Some(num);
-        }
-    }
-
-    let addr: u8 = address.expect("The `address` attribute is not defined");
+    
+    let reg = Register::from_derive_input(ast).expect("Could not parse address");
+    let addr = reg.addr;
+    let ty = reg.ty.unwrap_or(syn::parse_str("u8").unwrap());
     quote! {
         #[allow(dead_code)]
         impl device_register::Register for #name {
-            type Address = u8;
+            type Address = #ty;
             const ADDRESS: Self::Address = #addr;
         }
     }
 }
 
 /// Create a read only register
-#[proc_macro_derive(RORegister, attributes(address))]
+#[proc_macro_derive(RORegister, attributes(register))]
 pub fn ro_register(input: TokenStream) -> TokenStream {
     // Parse the representation
     // let args = parse_macro_input!(input as AttributeArgs);
@@ -58,7 +54,7 @@ fn impl_ro_register(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
 }
 
 /// Create an edit only register
-#[proc_macro_derive(EORegister, attributes(address))]
+#[proc_macro_derive(EORegister, attributes(register))]
 pub fn eo_register(input: TokenStream) -> TokenStream {
     // Parse the representation
     let ast = syn::parse(input).unwrap();
@@ -70,7 +66,7 @@ pub fn eo_register(input: TokenStream) -> TokenStream {
 }
 
 /// Create a read/edit register
-#[proc_macro_derive(RERegister, attributes(address))]
+#[proc_macro_derive(RERegister, attributes(register))]
 pub fn re_register(input: TokenStream) -> TokenStream {
     // Parse the representation
     let ast = syn::parse(input).unwrap();
@@ -91,7 +87,7 @@ fn impl_eo_register(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
 }
 
 /// Create a read/write register
-#[proc_macro_derive(WORegister, attributes(address))]
+#[proc_macro_derive(WORegister, attributes(register))]
 pub fn wo_register(input: TokenStream) -> TokenStream {
     // Parse the representation
     let ast = syn::parse(input).unwrap();
@@ -103,7 +99,7 @@ pub fn wo_register(input: TokenStream) -> TokenStream {
 }
 
 /// Create a read/write register
-#[proc_macro_derive(RWRegister, attributes(address))]
+#[proc_macro_derive(RWRegister, attributes(register))]
 pub fn rw_register(input: TokenStream) -> TokenStream {
     // Parse the representation
     let ast = syn::parse(input).unwrap();

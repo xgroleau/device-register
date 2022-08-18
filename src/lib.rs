@@ -1,15 +1,7 @@
 pub use device_register_impl::*;
-pub use modular_bitfield;
-use modular_bitfield::Specifier;
-
-pub trait SerDe {
-    fn from_bytes(&mut self, bytes: [u8]){
-        
-    }
-}
 
 /// Trait of a register containing an address
-pub trait Register: Specifier {
+pub trait Register {
     /// Type of the adress
     type Address;
 
@@ -19,14 +11,13 @@ pub trait Register: Specifier {
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum Error {
+pub enum Error {}
 
-}
-
-pub trait RegisterInterface<R, A> where R: Register<Address = A>
+pub trait RegisterInterface<R, A>
+where
+    R: Register<Address = A>,
 {
-
-    fn read_register(&mut self, value: &mut [u8]) -> Result<R, Error>;
+    fn read_register(&mut self) -> Result<R, Error>;
 
     fn write_register(&mut self, register: R) -> Result<(), Error>;
 }

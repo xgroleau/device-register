@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 device-register-impl = { path = "./device-register-impl", version = "0.1.0" }
 
+[dev-dependencies]
 modular-bitfield = "0.11.2"
