@@ -14,6 +14,7 @@ pub enum AddressType {
 #[register(addr = "AddressType::SomeRegister", ty = "AddressType")]
 
 pub struct SomeRegister(u16);
+
 #[bitfield]
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, RORegister)]

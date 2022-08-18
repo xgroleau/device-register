@@ -1,12 +1,20 @@
+//! A crate for the macro used in the device-register crate. See device-register crate for more information
+#![deny(unsafe_code, missing_docs)]
+
+use darling::{FromDeriveInput, FromMeta, ToTokens};
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{DeriveInput};
-use darling::{FromDeriveInput, ToTokens, FromMeta};
+use syn::DeriveInput;
 
+/// The valid values of an address
 enum Address {
+    /// A literal (float, int, bytestring, etc)
     Lit(syn::Lit),
+
+    /// A path to support enums
     Path(syn::Path),
 }
+
 impl ToTokens for Address {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match self {
@@ -17,7 +25,7 @@ impl ToTokens for Address {
 }
 impl FromMeta for Address {
     fn from_meta(item: &syn::Meta) -> darling::Result<Self> {
-        (match &*item {
+        match item {
             syn::Meta::Path(p) => Ok(Address::Path(p.clone())),
             syn::Meta::List(ref value) => Self::from_list(
                 &value
@@ -27,25 +35,29 @@ impl FromMeta for Address {
                     .collect::<Vec<syn::NestedMeta>>()[..],
             ),
             syn::Meta::NameValue(ref value) => Self::from_value(&value.lit),
-        })
+        }
         .map_err(|e| e.with_span(item))
     }
 
-    fn from_value(value: &syn::Lit) -> darling::Result<Self> { 
+    fn from_value(value: &syn::Lit) -> darling::Result<Self> {
         match value {
             syn::Lit::Str(str) => {
                 let path: syn::Path = str.parse()?;
                 Ok(Address::Path(path))
-            },
-            val => Ok(Address::Lit(val.clone()))
+            }
+            val => Ok(Address::Lit(val.clone())),
         }
     }
-
 }
+
+/// The arguments passed to the register helper attribute
 #[derive(darling::FromDeriveInput)]
 #[darling(attributes(register))]
 struct Register {
+    /// The value of the address
     addr: Address,
+
+    /// The type of the address, defaults to a u8
     ty: Option<syn::TypePath>,
 }
 
@@ -53,7 +65,7 @@ fn impl_register(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
     let name = &ast.ident;
     let reg = Register::from_derive_input(ast).expect("Could not parse register attribute");
     let addr = reg.addr;
-    let ty = reg.ty.unwrap_or(syn::parse_str("u8").unwrap());
+    let ty = reg.ty.unwrap_or_else(|| syn::parse_str("u8").unwrap());
     quote! {
         #[allow(dead_code)]
         impl device_register::Register for #name {
