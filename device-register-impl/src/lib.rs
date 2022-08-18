@@ -1,24 +1,57 @@
-#![doc(html_no_source)]
-
-use std::{ops::Add, iter::Inspect};
-
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{DeriveInput};
 use darling::{FromDeriveInput, ToTokens, FromMeta};
 
+enum Address {
+    Lit(syn::Lit),
+    Path(syn::Path),
+}
+impl ToTokens for Address {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        match self {
+            Address::Lit(val) => val.to_tokens(tokens),
+            Address::Path(val) => val.to_tokens(tokens),
+        }
+    }
+}
+impl FromMeta for Address {
+    fn from_meta(item: &syn::Meta) -> darling::Result<Self> {
+        (match &*item {
+            syn::Meta::Path(p) => Ok(Address::Path(p.clone())),
+            syn::Meta::List(ref value) => Self::from_list(
+                &value
+                    .nested
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<syn::NestedMeta>>()[..],
+            ),
+            syn::Meta::NameValue(ref value) => Self::from_value(&value.lit),
+        })
+        .map_err(|e| e.with_span(item))
+    }
 
-#[derive(FromDeriveInput)]
+    fn from_value(value: &syn::Lit) -> darling::Result<Self> { 
+        match value {
+            syn::Lit::Str(str) => {
+                let path: syn::Path = str.parse()?;
+                Ok(Address::Path(path))
+            },
+            val => Ok(Address::Lit(val.clone()))
+        }
+    }
+
+}
+#[derive(darling::FromDeriveInput)]
 #[darling(attributes(register))]
 struct Register {
-    addr: syn::Lit,
-    ty: Option<syn::Path>,
+    addr: Address,
+    ty: Option<syn::TypePath>,
 }
 
 fn impl_register(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
     let name = &ast.ident;
-    
-    let reg = Register::from_derive_input(ast).expect("Could not parse address");
+    let reg = Register::from_derive_input(ast).expect("Could not parse register attribute");
     let addr = reg.addr;
     let ty = reg.ty.unwrap_or(syn::parse_str("u8").unwrap());
     quote! {
