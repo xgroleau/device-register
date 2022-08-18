@@ -1,8 +1,6 @@
 //! A library to ease the manipulation of writing register mapping for drivers
 #![no_std]
-#![deny(unsafe_code, missing_docs)]
-
-use core::marker::PhantomData;
+// #![deny(unsafe_code, missing_docs)]
 
 pub use device_register_impl::*;
 
@@ -43,60 +41,60 @@ where
     fn write_register(&mut self, register: &R) -> Result<(), Error>;
 }
 
-/// A struct to access the device's register.
-pub struct DeviceAccessor<I, R, A>
+pub trait ReadRegister<R, A>
 where
-    R: Register<Address = A>,
-    I: RegisterInterface<R, A>,
+    R: ReadableRegister<Address = A>,
 {
-    interface: I,
-    register: PhantomData<R>,
-    address: PhantomData<A>,
+    fn read(&mut self) -> Result<R, Error>;
 }
 
-impl<I, R, A> DeviceAccessor<I, R, A>
+pub trait WriteRegister<R, A>
 where
-    R: Register<Address = A>,
+    R: WritableRegister<Address = A>,
+{
+    fn write(&mut self, register: R) -> Result<(), Error>;
+}
+
+pub trait EditRegister<R, A>
+where
+    R: EditableRegister<Address = A>,
+{
+    fn edit<F>(&mut self, f: F) -> Result<(), Error>
+    where
+        for<'w> F: FnOnce(&'w mut R) -> &'w mut R;
+}
+
+impl<I, R, A> ReadRegister<R, A> for I
+where
+    R: ReadableRegister<Address = A>,
     I: RegisterInterface<R, A>,
 {
-    /// Creates a new instance
-    pub fn new(interface: I) -> Self {
-        Self {
-            interface,
-            register: PhantomData,
-            address: PhantomData,
-        }
+    fn read(&mut self) -> Result<R, Error> {
+        self.read_register()
     }
+}
 
-    /// Read a register
-    pub fn read(&mut self) -> Result<R, Error>
-    where
-        R: ReadableRegister,
-    {
-        self.interface.read_register()
+impl<I, R, A> WriteRegister<R, A> for I
+where
+    R: WritableRegister<Address = A>,
+    I: RegisterInterface<R, A>,
+{
+    fn write(&mut self, register: R) -> Result<(), Error> {
+        self.write_register(&register)
     }
+}
 
-    /// Write a register
-    pub fn write(&mut self, register: R) -> Result<(), Error>
+impl<I, R, A> EditRegister<R, A> for I
+where
+    R: EditableRegister<Address = A>,
+    I: RegisterInterface<R, A>,
+{
+    fn edit<F>(&mut self, f: F) -> Result<(), Error>
     where
-        R: WritableRegister,
-    {
-        self.interface.write_register(&register)
-    }
-
-    /// Edit a register
-    pub fn edit<F>(&mut self, f: F) -> Result<(), Error>
-    where
-        R: EditableRegister,
         for<'w> F: FnOnce(&'w mut R) -> &'w mut R,
     {
-        let mut reg = self.interface.read_register()?;
-        f(&mut reg);
-        self.interface.write_register(&reg)
-    }
-
-    /// Free the communication interface
-    pub fn free(self) -> I {
-        self.interface
+        let mut val = self.read_register()?;
+        f(&mut val);
+        self.write_register(&val)
     }
 }

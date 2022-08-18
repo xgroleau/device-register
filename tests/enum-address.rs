@@ -53,11 +53,16 @@ where
 }
 
 fn main() {
-    let mut device = DeviceDriver::new();
-    let val = device
-        .registers
-        .get(&(SomeRegister::ADDRESS as u8))
-        .unwrap();
-    let reg: SomeRegister = device.read_register().unwrap();
-    let reg: SomeOtherRegister = device.read_register().unwrap();
+    let device = DeviceDriver::new();
+    let mut dev: DeviceAccessor<_, _, AddressType> = DeviceAccessor::<_, _, _>::new(device);
+
+    let some: SomeRegister = dev.read().unwrap();
+    let other: SomeOtherRegister = dev.read().unwrap();
+
+    // let val = device
+    //     .registers
+    //     .get(&(SomeRegister::ADDRESS as u8))
+    //     .unwrap();
+    // let reg: SomeRegister = device.read_register().unwrap();
+    // let reg: SomeOtherRegister = device.read_register().unwrap();
 }
