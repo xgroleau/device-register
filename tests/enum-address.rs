@@ -1,42 +1,60 @@
 use std::collections::HashMap;
-use std::u8;
 
-use device_register::{RORegister, Register, RegisterInterface};
-use modular_bitfield::bitfield;
-pub enum AddressType {
+use device_register::*;
+
+pub enum SomeAddress {
     SomeRegister = 0x42,
     SomeOtherRegister = 0x45,
 }
 
-#[bitfield]
-#[repr(u16)]
-#[derive(Debug, Clone, Copy, RORegister)]
-#[register(addr = "AddressType::SomeRegister", ty = "AddressType")]
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, RWRegister)]
+#[register(addr = "SomeAddress::SomeRegister", ty = "SomeAddress")]
+pub struct SomeRegister(pub u16);
+impl From<SomeRegister> for u16 {
+    fn from(val: SomeRegister) -> Self {
+        val.0
+    }
+}
+impl From<u16> for SomeRegister {
+    fn from(val: u16) -> Self {
+        SomeRegister(val)
+    }
+}
 
-pub struct SomeRegister(u16);
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, RWRegister)]
+#[register(addr = "SomeAddress::SomeOtherRegister", ty = "SomeAddress")]
+pub struct SomeOtherRegister(pub u16);
+impl From<SomeOtherRegister> for u16 {
+    fn from(val: SomeOtherRegister) -> Self {
+        val.0
+    }
+}
+impl From<u16> for SomeOtherRegister {
+    fn from(val: u16) -> Self {
+        SomeOtherRegister(val)
+    }
+}
 
-#[bitfield]
-#[repr(u16)]
-#[derive(Debug, Clone, Copy, RORegister)]
-#[register(addr = "AddressType::SomeOtherRegister", ty = "AddressType")]
-
-pub struct SomeOtherRegister(u16);
-
+// Mock of the device driver
 pub struct DeviceDriver {
     // Simulate reading from the device
     pub registers: HashMap<u8, [u8; 2]>,
 }
-
 impl DeviceDriver {
     pub fn new() -> Self {
         let mut registers = HashMap::new();
         registers.insert(SomeRegister::ADDRESS as u8, [0, 0]);
+        registers.insert(SomeOtherRegister::ADDRESS as u8, [0, 0]);
         Self { registers }
     }
 }
-impl<R> RegisterInterface<R, AddressType> for DeviceDriver
+
+// Implementation of the interface
+impl<R> RegisterInterface<R, SomeAddress> for DeviceDriver
 where
-    R: Register<Address = AddressType> + From<u16> + Clone,
+    R: Register<Address = SomeAddress> + Clone + From<u16>,
     u16: From<R>,
 {
     fn read_register(&mut self) -> Result<R, device_register::Error> {
@@ -52,12 +70,29 @@ where
     }
 }
 
-fn main() {
-    let device = DeviceDriver::new();
-    let mut dev: DeviceAccessor<_, _, AddressType> = DeviceAccessor::<_, _, _>::new(device);
+#[test]
+fn read_edit() {
+    let mut device = DeviceDriver::new();
 
-    let some: SomeRegister = dev.read().unwrap();
-    let other: SomeOtherRegister = dev.read().unwrap();
+    let some: SomeRegister = device.read().unwrap();
+    let other: SomeOtherRegister = device.read().unwrap();
+
+    assert_eq!(u16::from(some), 0);
+    assert_eq!(u16::from(other), 0);
+
+    device
+        .edit(|r: &mut SomeRegister| {
+            r.0 = 42;
+            r
+        })
+        .unwrap();
+
+    device
+        .edit(|r: &mut SomeOtherRegister| {
+            r.0 = 0x42;
+            r
+        })
+        .unwrap();
 
     // let val = device
     //     .registers
