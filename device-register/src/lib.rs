@@ -2,7 +2,7 @@
 #![no_std]
 #![deny(unsafe_code, missing_docs)]
 
-pub use device_register_impl::*;
+pub use device_register_macro::*;
 
 /// Trait of a register containing an address
 pub trait Register {
