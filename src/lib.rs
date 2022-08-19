@@ -1,6 +1,6 @@
 //! A library to ease the manipulation of writing register mapping for drivers
 #![no_std]
-// #![deny(unsafe_code, missing_docs)]
+#![deny(unsafe_code, missing_docs)]
 
 pub use device_register_impl::*;
 
