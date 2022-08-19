@@ -66,15 +66,16 @@ where
     for<'a> R: EditableRegister<Address = A, Error = E> + 'a,
 {
     /// The return type of the write
-    type Output<'a>: Future<Output = Result<(), E>>
+    type Output<'a, F>: Future<Output = Result<(), E>>
     where
-        Self: 'a;
+        Self: 'a,
+        F: FnOnce(R) -> R + 'a;
 
     /// Edit a register. The closure takes a reference to the register,
     /// the same register must be edited, then returned.
-    fn edit<'a: 'w, 'w, F>(&'a mut self, f: F) -> Self::Output<'a>
+    fn edit<'a, F>(&'a mut self, f: F) -> Self::Output<'a, F>
     where
-        F: FnOnce(&'w mut R) -> &'w R + 'a;
+        F: FnOnce(R) -> R + 'a;
 }
 
 impl<I, R, A, E> ReadRegister<R, A, E> for I
@@ -112,15 +113,18 @@ where
     for<'a> A: 'a,
     for<'a> E: 'a,
 {
-    type Output<'a> = impl Future<Output = Result<(), E>> +'a where Self: 'a;
+    type Output<'a, F> = impl Future<Output = Result<(), E>> +'a where
+        Self: 'a,
+        F: FnOnce(R) -> R + 'a,
+    ;
 
-    fn edit<'a: 'w, 'w, F>(&'a mut self, f: F) -> Self::Output<'a>
+    fn edit<'a, F>(&'a mut self, f: F) -> Self::Output<'a, F>
     where
-        F: FnOnce(&'w mut R) -> &'w R + 'a,
+        F: FnOnce(R) -> R + 'a,
     {
         async {
-            let mut val = self.read_register().await?;
-            let res = f(&mut val);
+            let val = self.read_register().await?;
+            let res = f(val);
             self.write_register(&res).await
         }
     }

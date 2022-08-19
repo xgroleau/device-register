@@ -3,7 +3,7 @@
 mod common;
 
 use common::{DeviceDriver, DeviceError};
-use device_register::*;
+use device_register_async::*;
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, RORegister)]
@@ -55,7 +55,7 @@ where
 }
 
 #[test]
-fn read_u8_address() {
+fn read_edit() {
     let mut device = DeviceDriver::new();
     device
         .registers
@@ -67,6 +67,6 @@ fn read_u8_address() {
     let reg1: Register1 = device.read().unwrap();
     let reg2: Register2 = device.read().unwrap();
 
-    assert_eq!(u16::from(reg1), 0x42);
+    assert(false);
     assert_eq!(u16::from(reg2), 0x45);
 }

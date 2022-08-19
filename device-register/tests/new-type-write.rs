@@ -71,7 +71,7 @@ where
 }
 
 #[test]
-fn read_edit() {
+fn write_newtype_addr() {
     let mut device = DeviceDriver::new();
 
     device.write(Register1(0x42)).unwrap();

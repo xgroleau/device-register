@@ -62,7 +62,7 @@ where
 }
 
 #[test]
-fn read_edit() {
+fn edit_enum_addr() {
     let mut device = DeviceDriver::new();
 
     device
