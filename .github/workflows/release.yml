@@ -1,0 +1,135 @@
+name: release
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+env:
+  CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
+
+jobs:
+  build:
+    name: ${{ matrix.job.target }} (${{ matrix.job.os }})
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-20.04 }
+          - { target: x86_64-pc-windows-gnu, os: ubuntu-20.04, use-cross: true }
+    outputs:
+      linux_x86_64: ${{ steps.step1.outputs.test }}
+      windows_x86_64: ${{ steps.step2.outputs.test }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_PA_TOKEN }}
+          submodules: true
+
+      - name: Get the version
+        id: version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
+      - name: Install toolchain
+        uses: oxidecomputer/actions-rs_toolchain@ad3f86084a8a5acf2c09cb691421b31cf8af7a36
+        with:
+          target: ${{ matrix.job.target }}
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ matrix.job.use-cross }}
+          command: build
+          args: --release --target=${{ matrix.job.target }}
+
+      - name: Rename
+        id: rename
+        shell: bash
+        run: |
+          # Figure out suffix of binary
+          EXE_suffix=""
+          case ${{ matrix.job.target }} in
+            *-pc-windows-*) EXE_suffix=".exe" ;;
+          esac;
+          # Figure out what strip tool to use if any
+          STRIP="strip"
+          case ${{ matrix.job.target }} in
+            arm-unknown-linux-*) STRIP="arm-linux-gnueabihf-strip" ;;
+            aarch64-unknown-linux-gnu) STRIP="aarch64-linux-gnu-strip" ;;
+            *-pc-windows-msvc) STRIP="" ;;
+          esac;
+          # Setup paths
+          BIN_DIR="${CICD_INTERMEDIATES_DIR}/stripped-release-bin/"
+          mkdir -p "${BIN_DIR}"
+          PREV_BIN_NAME="vdk${EXE_suffix}"
+          BIN_NAME="vdk-${{ steps.version.outputs.VERSION }}-${{ matrix.job.target }}${EXE_suffix}"
+          BIN_PATH=${BIN_DIR}/${BIN_NAME}
+          # Copy the release build binary to the result location
+          cp "target/${{ matrix.job.target }}/release/${PREV_BIN_NAME}" "${BIN_PATH}"
+
+          # Let subsequent steps know where to find the (stripped) bin
+          echo ::set-output name=BIN_NAME::${BIN_NAME}
+          echo ::set-output name=BIN_PATH::${BIN_PATH}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.rename.outputs.BIN_NAME }}
+          path: ${{ steps.rename.outputs.BIN_PATH }}
+          retention-days: 5
+
+  doc:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_PA_TOKEN }}
+          submodules: true
+
+      - name: Install toolchain
+        uses: oxidecomputer/actions-rs_toolchain@ad3f86084a8a5acf2c09cb691421b31cf8af7a36
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Create doc
+        uses: actions-rs/cargo@v1.0.1
+        with:
+          command: doc
+
+      - name: Create index for github pages
+        run: |
+          echo "<meta http-equiv=\"refresh\" content=\"0; url=valencell-dk\">" > target/doc/index.html
+
+      - name: Deploy doc
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: target/doc
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Display artifacts
+        run: ls -R artifacts/
+
+      - name: Create a GitHub release
+        uses: softprops/action-gh-release@v0.1.14
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/*/*
