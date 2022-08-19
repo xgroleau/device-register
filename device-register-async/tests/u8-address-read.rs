@@ -1,9 +1,14 @@
 //! Note that using a primitive as an address is not recommended since it would allow other libraries to also implement using the same primitive
 //! Then the user could use the registers from one librare with a device of the other.  Using newtypes is recommended
+#![feature(generic_associated_types)]
+#![feature(type_alias_impl_trait)]
+
 mod common;
 
 use common::{DeviceDriver, DeviceError};
+use device_register::{RORegister, Register};
 use device_register_async::*;
+use futures::Future;
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, RORegister)]
@@ -41,21 +46,35 @@ where
     R: Register<Address = u8, Error = DeviceError> + Clone + From<u16>,
     u16: From<R>,
 {
-    fn read_register(&mut self) -> Result<R, DeviceError> {
-        let bytes = self.registers.get(&(R::ADDRESS)).ok_or(DeviceError::Get)?;
-        let reg = u16::from_be_bytes(bytes.clone());
-        Ok(reg.into())
+    type ReadOutput<'a> = impl Future<Output = Result<R, R::Error>>
+    where
+        Self: 'a
+        ;
+
+    fn read_register<'a>(&'a mut self) -> Self::ReadOutput<'a> {
+        async {
+            let bytes = self.registers.get(&(R::ADDRESS)).ok_or(DeviceError::Get)?;
+            let reg = u16::from_be_bytes(bytes.clone());
+            Ok(reg.into())
+        }
     }
 
-    fn write_register(&mut self, register: &R) -> Result<(), DeviceError> {
-        let bytes: u16 = register.clone().into();
-        self.registers.insert(R::ADDRESS, bytes.to_be_bytes());
-        Ok(())
+    type WriteOutput<'a> = impl Future<Output = Result<(), R::Error>>
+    where
+        Self: 'a,
+        R: 'a;
+
+    fn write_register<'a>(&'a mut self, register: &'a R) -> Self::WriteOutput<'a> {
+        async {
+            let bytes: u16 = register.clone().into();
+            self.registers.insert(R::ADDRESS, bytes.to_be_bytes());
+            Ok(())
+        }
     }
 }
 
-#[test]
-fn read_edit() {
+#[tokio::test]
+async fn read_edit() {
     let mut device = DeviceDriver::new();
     device
         .registers
@@ -64,9 +83,9 @@ fn read_edit() {
         .registers
         .insert(Register2::ADDRESS, 0x45_u16.to_be_bytes());
 
-    let reg1: Register1 = device.read().unwrap();
-    let reg2: Register2 = device.read().unwrap();
+    let reg1: Register1 = device.read().await.unwrap();
+    let reg2: Register2 = device.read().await.unwrap();
 
-    assert(false);
+    assert_eq!(u16::from(reg1), 0x42);
     assert_eq!(u16::from(reg2), 0x45);
 }

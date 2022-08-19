@@ -10,4 +10,4 @@ device-register = { version = "0.1.0", path = "../device-register" }
 futures = { version = "0.3.23", default-features = false }
 
 [dev-dependencies]
-tokio = "1.20.1"
+tokio = { version = "1.20.1", features = ["macros", "rt"] }

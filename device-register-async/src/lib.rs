@@ -4,6 +4,7 @@
 #![feature(generic_associated_types)]
 #![feature(type_alias_impl_trait)]
 
+pub use device_register;
 use device_register::{EditableRegister, ReadableRegister, Register, WritableRegister};
 use futures::Future;
 
@@ -19,15 +20,16 @@ where
         Self: 'a;
 
     /// Reads a register and returns it
-    fn read_register<'a>(&mut self) -> Self::ReadOutput<'a>;
+    fn read_register<'a>(&'a mut self) -> Self::ReadOutput<'a>;
 
     /// The return type of the write_register function
     type WriteOutput<'a>: Future<Output = Result<(), E>>
     where
-        Self: 'a;
+        Self: 'a,
+        R: 'a;
 
     /// Writes a register to the device
-    fn write_register<'a>(&mut self, register: &R) -> Self::WriteOutput<'a>;
+    fn write_register<'a>(&'a mut self, register: &'a R) -> Self::WriteOutput<'a>;
 }
 
 /// Trait to safely read a register. Only a readable register can be read.
@@ -41,7 +43,7 @@ where
         Self: 'a;
 
     /// Read a register
-    fn read<'a>(&mut self) -> Self::Output<'a>;
+    fn read<'a>(&'a mut self) -> Self::Output<'a>;
 }
 
 /// Trait to safely write a register. Only a writable register can be written to.
@@ -52,10 +54,11 @@ where
     /// The return type of the write
     type Output<'a>: Future<Output = Result<(), E>>
     where
-        Self: 'a;
+        Self: 'a,
+        R: 'a;
 
     /// Write a register
-    fn write<'a>(&mut self, register: R) -> Self::Output<'a>;
+    fn write<'a>(&'a mut self, register: R) -> Self::Output<'a>;
 }
 
 /// Trait to safely read-edit-write a register.
@@ -87,7 +90,7 @@ where
 {
     type Output<'a> = impl Future<Output = Result<R, E>> +'a where Self: 'a;
 
-    fn read<'a>(&mut self) -> Self::Output<'a> {
+    fn read<'a>(&'a mut self) -> Self::Output<'a> {
         self.read_register()
     }
 }
@@ -99,10 +102,10 @@ where
     for<'a> A: 'a,
     for<'a> E: 'a,
 {
-    type Output<'a> = impl Future<Output = Result<(), E>> +'a where Self: 'a;
+    type Output<'a> = impl Future<Output = Result<(), E>> +'a where Self: 'a, R: 'a;
 
-    fn write<'a>(&mut self, register: R) -> Self::Output<'a> {
-        self.write_register(&register)
+    fn write<'a>(&'a mut self, register: R) -> Self::Output<'a> {
+        async move { self.write_register(&register).await }
     }
 }
 
