@@ -35,7 +35,7 @@ impl From<u16> for Register2 {
     }
 }
 
-// Implementation of the interface for this type of address
+// Implementation of the interface for a u8
 impl<R> RegisterInterface<R, u8, DeviceError> for DeviceDriver
 where
     R: Register<Address = u8, Error = DeviceError> + Clone + From<u16>,

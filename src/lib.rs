@@ -27,11 +27,6 @@ pub trait EditableRegister: Register {}
 /// Trait a writable register, like a register but can be written to
 pub trait WritableRegister: Register {}
 
-/// The possible error returned by the library
-// #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-// pub enum Error {}
-
 /// Traits that define how to read and write the registers.
 /// Note that those functions should mostly just be implemented and not used since they are not bound by Read/Write/Edit permission.
 pub trait RegisterInterface<R, A, E>

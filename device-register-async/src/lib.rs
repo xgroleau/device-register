@@ -1,66 +1,88 @@
-use std::{future::Future, marker::PhantomData};
+#![no_std]
+#![deny(unsafe_code, missing_docs)]
 
-use crate::{EditableRegister, Error, ReadableRegister, Register, WritableRegister};
-
-pub trait RegisterInterface<R, A>
+/// Traits that define how to read and write the registers.
+/// Note that those functions should mostly just be implemented and not used since they are not bound by Read/Write/Edit permission.
+pub trait RegisterInterface<R, A, E>
 where
-    R: Register<Address = A>,
+    R: Register<Address = A, Error = E>,
 {
-    type ReadOutput: Future<Output = Result<R, Error>>;
-    fn read_register(&mut self) -> Self::ReadOutput;
+    /// The return type of the read_register function
+    type ReadOutput = Future<Output = Result<R, R::Error>>;
 
-    type WriteOutput: Future<Output = Result<(), Error>>;
-    fn write_register(&mut self, register: &R) -> Self::WriteOutput;
+    /// Reads a register and returns it
+    fn read_register(&mut self) -> ReadOutput;
+
+    /// The return type of the write_register function
+    type WriteOutput = Future<Output = Result<R, R::Error>>;
+
+    /// Writes a register to the device
+    fn write_register(&mut self, register: &R) -> WriteOutput;
 }
 
-pub struct RegisterReader<I, R, A>
+/// Trait to safely read a register. Only a readable register can be read.
+pub trait ReadRegister<R, A, E>
 where
-    R: Register<Address = A>,
-    I: RegisterInterface<R, A>,
+    R: ReadableRegister<Address = A, Error = E>,
 {
-    interface: I,
-    register: PhantomData<R>,
-    address: PhantomData<A>,
+    /// Read a register
+    fn read(&mut self) -> Result<R, R::Error>;
 }
 
-impl<I, R, A> RegisterReader<I, R, A>
+/// Trait to safely write a register. Only a writable register can be written to.
+pub trait WriteRegister<R, A, E>
 where
-    R: Register<Address = A>,
-    I: RegisterInterface<R, A>,
+    R: WritableRegister<Address = A, Error = E>,
 {
-    pub fn new(interface: I) -> Self {
-        Self {
-            interface,
-            register: PhantomData,
-            address: PhantomData,
-        }
-    }
+    /// Write a register
+    fn write(&mut self, register: R) -> Result<(), R::Error>;
+}
 
-    pub async fn read(&mut self) -> Result<R, Error>
+/// Trait to safely read-edit-write a register.
+/// Usefull when a register has reserved values for internal uses.
+/// Avoids writing garbage to the reserved  bits.
+pub trait EditRegister<R, A, E>
+where
+    R: EditableRegister<Address = A, Error = E>,
+{
+    /// Edit a register. The closure takes a reference to the register,
+    /// the same register must be edited, then returned.
+    fn edit<F>(&mut self, f: F) -> Result<(), R::Error>
     where
-        R: ReadableRegister,
-    {
-        self.interface.read_register().await
-    }
+        for<'w> F: FnOnce(&'w mut R) -> &'w mut R;
+}
 
-    pub async fn write(&mut self, register: R) -> Result<(), Error>
-    where
-        R: WritableRegister,
-    {
-        self.interface.write_register(&register).await
+impl<I, R, A, E> ReadRegister<R, A, E> for I
+where
+    R: ReadableRegister<Address = A, Error = E>,
+    I: RegisterInterface<R, A, E>,
+{
+    fn read(&mut self) -> Result<R, R::Error> {
+        self.read_register()
     }
+}
 
-    pub async fn edit<F>(&mut self, f: F) -> Result<(), Error>
+impl<I, R, A, E> WriteRegister<R, A, E> for I
+where
+    R: WritableRegister<Address = A, Error = E>,
+    I: RegisterInterface<R, A, E>,
+{
+    fn write(&mut self, register: R) -> Result<(), R::Error> {
+        self.write_register(&register)
+    }
+}
+
+impl<I, R, A, E> EditRegister<R, A, E> for I
+where
+    R: EditableRegister<Address = A, Error = E>,
+    I: RegisterInterface<R, A, E>,
+{
+    fn edit<F>(&mut self, f: F) -> Result<(), R::Error>
     where
-        R: EditableRegister,
         for<'w> F: FnOnce(&'w mut R) -> &'w mut R,
     {
-        let mut reg = self.interface.read_register().await?;
-        f(&mut reg);
-        self.interface.write_register(&reg).await
-    }
-
-    pub fn free(self) -> I {
-        self.interface
+        let mut val = self.read_register()?;
+        f(&mut val);
+        self.write_register(&val)
     }
 }
