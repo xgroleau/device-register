@@ -19,7 +19,7 @@ where
         Self: 'a;
 
     /// Reads a register and returns it
-    fn read_register<'a>(&'a mut self) -> Self::ReadOutput<'a>;
+    fn read_register<'a>(&mut self) -> Self::ReadOutput<'a>;
 
     /// The return type of the write_register function
     type WriteOutput<'a>: Future<Output = Result<(), E>>
@@ -27,7 +27,7 @@ where
         Self: 'a;
 
     /// Writes a register to the device
-    fn write_register<'a>(&'a mut self, register: &R) -> Self::WriteOutput<'a>;
+    fn write_register<'a>(&mut self, register: &R) -> Self::WriteOutput<'a>;
 }
 
 /// Trait to safely read a register. Only a readable register can be read.
@@ -41,7 +41,7 @@ where
         Self: 'a;
 
     /// Read a register
-    fn read<'a>(&'a mut self) -> Self::Output<'a>;
+    fn read<'a>(&mut self) -> Self::Output<'a>;
 }
 
 /// Trait to safely write a register. Only a writable register can be written to.
@@ -55,7 +55,7 @@ where
         Self: 'a;
 
     /// Write a register
-    fn write<'a>(&'a mut self, register: R) -> Self::Output<'a>;
+    fn write<'a>(&mut self, register: R) -> Self::Output<'a>;
 }
 
 /// Trait to safely read-edit-write a register.
@@ -63,7 +63,7 @@ where
 /// Avoids writing garbage to the reserved  bits.
 pub trait EditRegister<R, A, E>
 where
-    R: EditableRegister<Address = A, Error = E>,
+    for<'a> R: EditableRegister<Address = A, Error = E> + 'a,
 {
     /// The return type of the write
     type Output<'a>: Future<Output = Result<(), E>>
@@ -74,7 +74,7 @@ where
     /// the same register must be edited, then returned.
     fn edit<'a, F>(&'a mut self, f: F) -> Self::Output<'a>
     where
-        for<'w> F: FnOnce(&'w mut R) -> &'w mut R;
+        F: FnOnce(R) -> R + 'a;
 }
 
 impl<I, R, A, E> ReadRegister<R, A, E> for I
@@ -86,7 +86,42 @@ where
 {
     type Output<'a> = impl Future<Output = Result<R, E>> +'a where Self: 'a;
 
-    fn read<'a>(&'a mut self) -> Self::Output<'a> {
-        RegisterInterface::read_register(self)
+    fn read<'a>(&mut self) -> Self::Output<'a> {
+        self.read_register()
+    }
+}
+
+impl<I, R, A, E> WriteRegister<R, A, E> for I
+where
+    for<'a> R: WritableRegister<Address = A, Error = E> + 'a,
+    I: RegisterInterface<R, A, E>,
+    for<'a> A: 'a,
+    for<'a> E: 'a,
+{
+    type Output<'a> = impl Future<Output = Result<(), E>> +'a where Self: 'a;
+
+    fn write<'a>(&mut self, register: R) -> Self::Output<'a> {
+        self.write_register(&register)
+    }
+}
+
+impl<I, R, A, E> EditRegister<R, A, E> for I
+where
+    for<'a> R: EditableRegister<Address = A, Error = E> + 'a,
+    I: RegisterInterface<R, A, E>,
+    for<'a> A: 'a,
+    for<'a> E: 'a,
+{
+    type Output<'a> = impl Future<Output = Result<(), E>> +'a where Self: 'a;
+
+    fn edit<'a, F>(&'a mut self, f: F) -> Self::Output<'a>
+    where
+        F: FnOnce(R) -> R + 'a,
+    {
+        async {
+            let val = self.read_register().await?;
+            let val = f(val);
+            self.write_register(&val).await
+        }
     }
 }

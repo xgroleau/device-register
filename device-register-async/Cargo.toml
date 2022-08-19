@@ -7,4 +7,7 @@ edition = "2021"
 
 [dependencies]
 device-register = { version = "0.1.0", path = "../device-register" }
-futures = "0.3.23"
+futures = { version = "0.3.23", default-features = false }
+
+[dev-dependencies]
+tokio = "1.20.1"

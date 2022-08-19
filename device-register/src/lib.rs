@@ -102,7 +102,7 @@ where
         for<'w> F: FnOnce(&'w mut R) -> &'w mut R,
     {
         let mut val = self.read_register()?;
-        f(&mut val);
-        self.write_register(&val)
+        let val = f(&mut val);
+        self.write_register(val)
     }
 }
