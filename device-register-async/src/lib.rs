@@ -72,9 +72,9 @@ where
 
     /// Edit a register. The closure takes a reference to the register,
     /// the same register must be edited, then returned.
-    fn edit<'a, F>(&'a mut self, f: F) -> Self::Output<'a>
+    fn edit<'a: 'w, 'w, F>(&'a mut self, f: F) -> Self::Output<'a>
     where
-        F: FnOnce(R) -> R + 'a;
+        F: FnOnce(&'w mut R) -> &'w R + 'a;
 }
 
 impl<I, R, A, E> ReadRegister<R, A, E> for I
@@ -114,14 +114,14 @@ where
 {
     type Output<'a> = impl Future<Output = Result<(), E>> +'a where Self: 'a;
 
-    fn edit<'a, F>(&'a mut self, f: F) -> Self::Output<'a>
+    fn edit<'a: 'w, 'w, F>(&'a mut self, f: F) -> Self::Output<'a>
     where
-        F: FnOnce(R) -> R + 'a,
+        F: FnOnce(&'w mut R) -> &'w R + 'a,
     {
         async {
-            let val = self.read_register().await?;
-            let val = f(val);
-            self.write_register(&val).await
+            let mut val = self.read_register().await?;
+            let res = f(&mut val);
+            self.write_register(&res).await
         }
     }
 }
