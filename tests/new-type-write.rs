@@ -4,14 +4,15 @@ mod common;
 use common::DeviceDriver;
 use device_register::*;
 
-pub enum Address {
-    Register1 = common::REGISTER1 as isize,
-    Register2 = common::REGISTER2 as isize,
+mod test {
+    pub struct Address(pub u8);
 }
+// Verify that using module or the type directly that it works
+use test::Address;
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, EORegister)]
-#[register(addr = "Address::Register1", ty = "Address")]
+#[derive(Debug, Clone, Copy, WORegister)]
+#[register(addr = "Address(common::REGISTER1)", ty = "Address")]
 pub struct Register1(pub u16);
 impl From<Register1> for u16 {
     fn from(val: Register1) -> Self {
@@ -25,8 +26,8 @@ impl From<u16> for Register1 {
 }
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, EORegister)]
-#[register(addr = "Address::Register2", ty = "Address")]
+#[derive(Debug, Clone, Copy, WORegister)]
+#[register(addr = "test::Address(common::REGISTER2)", ty = "test::Address")]
 pub struct Register2(pub u16);
 impl From<Register2> for u16 {
     fn from(val: Register2) -> Self {
@@ -46,14 +47,14 @@ where
     u16: From<R>,
 {
     fn read_register(&mut self) -> Result<R, device_register::Error> {
-        let bytes = self.registers.get(&(R::ADDRESS as u8)).unwrap();
+        let bytes = self.registers.get(&(&R::ADDRESS.0)).unwrap();
         let reg = u16::from_be_bytes(bytes.clone());
         Ok(reg.into())
     }
 
     fn write_register(&mut self, register: &R) -> Result<(), device_register::Error> {
         let bytes: u16 = register.clone().into();
-        self.registers.insert(R::ADDRESS as u8, bytes.to_be_bytes());
+        self.registers.insert(R::ADDRESS.0, bytes.to_be_bytes());
         Ok(())
     }
 }
@@ -62,27 +63,13 @@ where
 fn read_edit() {
     let mut device = DeviceDriver::new();
 
-    device
-        .edit(|r: &mut Register1| {
-            assert_eq!(r.0, 0);
-            r.0 = 0x42;
-            r
-        })
-        .unwrap();
-
-    device
-        .edit(|r: &mut Register2| {
-            assert_eq!(r.0, 0);
-            r.0 = 0x45;
-            r
-        })
-        .unwrap();
+    device.write(Register1(0x42)).unwrap();
+    device.write(Register2(0x45)).unwrap();
 
     assert_eq!(
         device.registers.get(&common::REGISTER1).unwrap(),
         &0x42_u16.to_be_bytes()
     );
-
     assert_eq!(
         device.registers.get(&common::REGISTER2).unwrap(),
         &0x45_u16.to_be_bytes()

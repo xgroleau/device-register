@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-pub const REGISTER1: u8 = 0x42;
-pub const REGISTER2: u8 = 0x45;
+pub const REGISTER1: u8 = 0x01;
+pub const REGISTER2: u8 = 0x02;
 
 // Mock of the device driver
 pub struct DeviceDriver {

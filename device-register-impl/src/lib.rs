@@ -12,21 +12,21 @@ enum Address {
     Lit(syn::Lit),
 
     /// A path to support enums
-    Path(syn::Path),
+    Pat(syn::Pat),
 }
 
 impl ToTokens for Address {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match self {
             Address::Lit(val) => val.to_tokens(tokens),
-            Address::Path(val) => val.to_tokens(tokens),
+            Address::Pat(val) => val.to_tokens(tokens),
         }
     }
 }
 impl FromMeta for Address {
     fn from_meta(item: &syn::Meta) -> darling::Result<Self> {
         match item {
-            syn::Meta::Path(p) => Ok(Address::Path(p.clone())),
+            syn::Meta::Path(_) => Self::from_word(),
             syn::Meta::List(ref value) => Self::from_list(
                 &value
                     .nested
@@ -42,8 +42,8 @@ impl FromMeta for Address {
     fn from_value(value: &syn::Lit) -> darling::Result<Self> {
         match value {
             syn::Lit::Str(str) => {
-                let path: syn::Path = str.parse()?;
-                Ok(Address::Path(path))
+                let pattern: syn::Pat = str.parse()?;
+                Ok(Address::Pat(pattern))
             }
             val => Ok(Address::Lit(val.clone())),
         }
@@ -58,21 +58,21 @@ struct Register {
     addr: Address,
 
     /// The type of the address, defaults to a u8
-    ty: Option<syn::TypePath>,
+    ty: Option<syn::Type>,
 }
 
-fn impl_register(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
+fn impl_register(ast: &syn::DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let name = &ast.ident;
-    let reg = Register::from_derive_input(ast).expect("Could not parse register attribute");
+    let reg = Register::from_derive_input(ast)?;
     let addr = reg.addr;
     let ty = reg.ty.unwrap_or_else(|| syn::parse_str("u8").unwrap());
-    quote! {
+    Ok(quote! {
         #[allow(dead_code)]
         impl device_register::Register for #name {
             type Address = #ty;
             const ADDRESS: Self::Address = #addr;
         }
-    }
+    })
 }
 
 /// Create a read only register
@@ -84,7 +84,7 @@ pub fn ro_register(input: TokenStream) -> TokenStream {
 
     // Build the impl
 
-    let mut output = impl_register(&ast);
+    let mut output = impl_register(&ast).unwrap_or_else(syn::Error::into_compile_error);
     output.extend(impl_ro_register(&ast));
     output.into()
 }
@@ -105,7 +105,7 @@ pub fn eo_register(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
 
     // Build the impl
-    let mut output = impl_register(&ast);
+    let mut output = impl_register(&ast).unwrap_or_else(syn::Error::into_compile_error);
     output.extend(impl_eo_register(&ast));
     output.into()
 }
@@ -117,7 +117,7 @@ pub fn re_register(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
 
     // Build the impl
-    let mut output = impl_register(&ast);
+    let mut output = impl_register(&ast).unwrap_or_else(syn::Error::into_compile_error);
     output.extend(impl_ro_register(&ast));
     output.extend(impl_eo_register(&ast));
     output.into()
@@ -138,7 +138,7 @@ pub fn wo_register(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
 
     // Build the impl
-    let mut output = impl_register(&ast);
+    let mut output = impl_register(&ast).unwrap_or_else(syn::Error::into_compile_error);
     output.extend(impl_wo_register(&ast));
     output.into()
 }
@@ -150,7 +150,7 @@ pub fn rw_register(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
 
     // Build the impl
-    let mut output = impl_register(&ast);
+    let mut output = impl_register(&ast).unwrap_or_else(syn::Error::into_compile_error);
     output.extend(impl_ro_register(&ast));
     output.extend(impl_eo_register(&ast));
     output.extend(impl_wo_register(&ast));
