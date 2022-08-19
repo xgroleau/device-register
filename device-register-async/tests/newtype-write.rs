@@ -63,7 +63,7 @@ where
                 .registers
                 .get(&(R::ADDRESS.0))
                 .ok_or(DeviceError::Get)?;
-            let reg = u16::from_be_bytes(bytes.clone());
+            let reg = u16::from_be_bytes(*bytes);
             Ok(reg.into())
         }
     }

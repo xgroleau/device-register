@@ -16,6 +16,11 @@ impl DeviceDriver {
         Self { registers }
     }
 }
+impl Default for DeviceDriver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeviceError {

@@ -55,11 +55,8 @@ where
     u16: From<R>,
 {
     fn read_register(&mut self) -> Result<R, DeviceError> {
-        let bytes = self
-            .registers
-            .get(&(&R::ADDRESS.0))
-            .ok_or(DeviceError::Get)?;
-        let reg = u16::from_be_bytes(bytes.clone());
+        let bytes = self.registers.get(&R::ADDRESS.0).ok_or(DeviceError::Get)?;
+        let reg = u16::from_be_bytes(*bytes);
         Ok(reg.into())
     }
 

@@ -51,10 +51,10 @@ where
         Self: 'a
         ;
 
-    fn read_register(& mut self) -> Self::ReadOutput<'_> {
+    fn read_register(&mut self) -> Self::ReadOutput<'_> {
         async {
             let bytes = self.registers.get(&(R::ADDRESS)).ok_or(DeviceError::Get)?;
-            let reg = u16::from_be_bytes(bytes.clone());
+            let reg = u16::from_be_bytes(*bytes);
             Ok(reg.into())
         }
     }
