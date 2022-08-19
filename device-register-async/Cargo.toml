@@ -1,0 +1,14 @@
+[package]
+name = "device-register-async"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+device-register = { version = "0.1.0", path = "../device-register" }
+futures = { version = "0.3.23", default-features = false }
+
+[dev-dependencies]
+modular-bitfield = "0.11.2"
+tokio = { version = "1.20.1", features = ["macros", "rt"] }

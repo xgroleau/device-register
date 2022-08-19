@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "device-register",
+    "device-register-async",
+    "device-register-macro",
+]
