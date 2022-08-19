@@ -20,7 +20,7 @@ where
         Self: 'a;
 
     /// Reads a register and returns it
-    fn read_register<'a>(&'a mut self) -> Self::ReadOutput<'a>;
+    fn read_register(&mut self) -> Self::ReadOutput<'_>;
 
     /// The return type of the write_register function
     type WriteOutput<'a>: Future<Output = Result<(), E>>
@@ -43,7 +43,7 @@ where
         Self: 'a;
 
     /// Read a register
-    fn read<'a>(&'a mut self) -> Self::Output<'a>;
+    fn read(&mut self) -> Self::Output<'_>;
 }
 
 /// Trait to safely write a register. Only a writable register can be written to.
@@ -58,7 +58,7 @@ where
         R: 'a;
 
     /// Write a register
-    fn write<'a>(&'a mut self, register: R) -> Self::Output<'a>;
+    fn write(&mut self, register: R) -> Self::Output<'_>;
 }
 
 /// Trait to safely read-edit-write a register.
@@ -90,7 +90,7 @@ where
 {
     type Output<'a> = impl Future<Output = Result<R, E>> +'a where Self: 'a;
 
-    fn read<'a>(&'a mut self) -> Self::Output<'a> {
+    fn read(&mut self) -> Self::Output<'_> {
         self.read_register()
     }
 }
@@ -104,7 +104,7 @@ where
 {
     type Output<'a> = impl Future<Output = Result<(), E>> +'a where Self: 'a, R: 'a;
 
-    fn write<'a>(&'a mut self, register: R) -> Self::Output<'a> {
+    fn write(&mut self, register: R) -> Self::Output<'_> {
         async move { self.write_register(&register).await }
     }
 }

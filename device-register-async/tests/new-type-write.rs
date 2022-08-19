@@ -57,7 +57,7 @@ where
     where
         Self: 'a ;
 
-    fn read_register<'a>(&'a mut self) -> Self::ReadOutput<'a> {
+    fn read_register(&mut self) -> Self::ReadOutput<'_> {
         async {
             let bytes = self
                 .registers
