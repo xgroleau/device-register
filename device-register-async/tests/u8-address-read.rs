@@ -10,7 +10,7 @@ use device_register::{RORegister, Register};
 use device_register_async::*;
 use futures::Future;
 
-#[repr(transparent)]
+
 #[derive(Debug, Clone, Copy, RORegister)]
 #[register(addr = "common::REGISTER1", err = "DeviceError")] // No need to specify  the type since it's u8  by default
 pub struct Register1(pub u16);
@@ -25,7 +25,7 @@ impl From<u16> for Register1 {
     }
 }
 
-#[repr(transparent)]
+
 #[derive(Debug, Clone, Copy, RORegister)]
 #[register(addr = "common::REGISTER2", err = "DeviceError")]
 pub struct Register2(pub u16);
@@ -51,7 +51,7 @@ where
         Self: 'a
         ;
 
-    fn read_register(&mut self) -> Self::ReadOutput<'_> {
+    fn read_register(& mut self) -> Self::ReadOutput<'_> {
         async {
             let bytes = self.registers.get(&(R::ADDRESS)).ok_or(DeviceError::Get)?;
             let reg = u16::from_be_bytes(*bytes);

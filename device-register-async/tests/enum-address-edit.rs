@@ -12,7 +12,6 @@ pub enum Address {
     Register2 = common::REGISTER2 as isize,
 }
 
-#[repr(transparent)]
 #[derive(Debug, Clone, Copy, EORegister)]
 #[register(addr = "Address::Register1", ty = "Address", err = "DeviceError")]
 pub struct Register1(pub u16);
@@ -27,7 +26,6 @@ impl From<u16> for Register1 {
     }
 }
 
-#[repr(transparent)]
 #[derive(Debug, Clone, Copy, EORegister)]
 #[register(addr = "Address::Register2", ty = "Address", err = "DeviceError")]
 pub struct Register2(pub u16);
@@ -58,7 +56,7 @@ where
                 .registers
                 .get(&(R::ADDRESS as u8))
                 .ok_or(DeviceError::Get)?;
-            let reg = u16::from_be_bytes(*bytes);
+            let reg = u16::from_be_bytes(bytes.clone());
             Ok(reg.into())
         }
     }

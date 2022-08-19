@@ -10,7 +10,6 @@ mod test {
 // Verify that using module or the type directly that it works
 use test::Address;
 
-#[repr(transparent)]
 #[derive(Debug, Clone, Copy, WORegister)]
 #[register(
     addr = "Address(common::REGISTER1)",
@@ -29,7 +28,6 @@ impl From<u16> for Register1 {
     }
 }
 
-#[repr(transparent)]
 #[derive(Debug, Clone, Copy, WORegister)]
 #[register(
     addr = "test::Address(common::REGISTER2)",

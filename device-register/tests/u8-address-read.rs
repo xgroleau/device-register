@@ -5,7 +5,6 @@ mod common;
 use common::{DeviceDriver, DeviceError};
 use device_register::*;
 
-#[repr(transparent)]
 #[derive(Debug, Clone, Copy, RORegister)]
 #[register(addr = "common::REGISTER1", err = "DeviceError")] // No need to specify  the type since it's u8  by default
 pub struct Register1(pub u16);
@@ -20,7 +19,6 @@ impl From<u16> for Register1 {
     }
 }
 
-#[repr(transparent)]
 #[derive(Debug, Clone, Copy, RORegister)]
 #[register(addr = "common::REGISTER2", err = "DeviceError")]
 pub struct Register2(pub u16);

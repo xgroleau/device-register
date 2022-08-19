@@ -1,48 +1,41 @@
+#![allow(clippy::identity_op)]
 #![feature(generic_associated_types)]
 #![feature(type_alias_impl_trait)]
+#[path = "./common.rs"]
 mod common;
 
 use common::{DeviceDriver, DeviceError};
-use device_register::{Register, WORegister};
+use device_register::{RWRegister, Register};
 use device_register_async::*;
 use futures::Future;
+use modular_bitfield::bitfield;
 
 pub struct Address(pub u8);
 
-#[derive(Debug, Clone, Copy, WORegister)]
+#[bitfield]
+#[repr(u16)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, RWRegister)]
 #[register(
     addr = "Address(common::REGISTER1)",
     ty = "Address",
     err = "DeviceError"
 )]
-pub struct Register1(pub u16);
-impl From<Register1> for u16 {
-    fn from(val: Register1) -> Self {
-        val.0
-    }
-}
-impl From<u16> for Register1 {
-    fn from(val: u16) -> Self {
-        Register1(val)
-    }
+pub struct Register1 {
+    pub field1: u8,
+    pub field2: u8,
 }
 
-#[derive(Debug, Clone, Copy, WORegister)]
+#[bitfield]
+#[repr(u16)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, RWRegister)]
 #[register(
     addr = "Address(common::REGISTER2)",
     ty = "Address",
     err = "DeviceError"
 )]
-pub struct Register2(pub u16);
-impl From<Register2> for u16 {
-    fn from(val: Register2) -> Self {
-        val.0
-    }
-}
-impl From<u16> for Register2 {
-    fn from(val: u16) -> Self {
-        Register2(val)
-    }
+pub struct Register2 {
+    pub field1: u8,
+    pub field2: u8,
 }
 
 // Implementation of the interface for this type of address
@@ -81,18 +74,31 @@ where
 }
 
 #[tokio::test]
-async fn write_newtype_addr() {
+async fn modular_bitfield() {
     let mut device = DeviceDriver::new();
 
-    device.write(Register1(0x42)).await.unwrap();
-    device.write(Register2(0x45)).await.unwrap();
+    let reg1 = Register1::new().with_field1(0x42).with_field2(0x43);
+    let reg2 = Register2::new().with_field1(0x45).with_field2(0x46);
 
-    assert_eq!(
-        device.registers.get(&common::REGISTER1).unwrap(),
-        &0x42_u16.to_be_bytes()
-    );
-    assert_eq!(
-        device.registers.get(&common::REGISTER2).unwrap(),
-        &0x45_u16.to_be_bytes()
-    );
+    device.write(reg1).await.unwrap();
+    device.write(reg2).await.unwrap();
+
+    let reg: Register1 = device.read().await.unwrap();
+    assert_eq!(reg, reg1);
+    let reg: Register2 = device.read().await.unwrap();
+    assert_eq!(reg, reg2);
+
+    device
+        .edit(|r: Register1| r.with_field1(0).with_field2(0))
+        .await
+        .unwrap();
+    device
+        .edit(|r: Register2| r.with_field1(0).with_field2(0))
+        .await
+        .unwrap();
+
+    let reg: Register1 = device.read().await.unwrap();
+    assert_eq!(u16::from(reg), 0);
+    let reg: Register2 = device.read().await.unwrap();
+    assert_eq!(u16::from(reg), 0);
 }
