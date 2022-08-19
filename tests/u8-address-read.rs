@@ -2,12 +2,12 @@
 //! Then the user could use the registers from one librare with a device of the other.  Using newtypes is recommended
 mod common;
 
-use common::DeviceDriver;
+use common::{DeviceDriver, DeviceError};
 use device_register::*;
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, RORegister)]
-#[register(addr = "common::REGISTER1")] // No need to specify  the type since it's u8  by default
+#[register(addr = "common::REGISTER1", err = "DeviceError")] // No need to specify  the type since it's u8  by default
 pub struct Register1(pub u16);
 impl From<Register1> for u16 {
     fn from(val: Register1) -> Self {
@@ -22,7 +22,7 @@ impl From<u16> for Register1 {
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, RORegister)]
-#[register(addr = "common::REGISTER2")]
+#[register(addr = "common::REGISTER2", err = "DeviceError")]
 pub struct Register2(pub u16);
 impl From<Register2> for u16 {
     fn from(val: Register2) -> Self {
@@ -36,18 +36,18 @@ impl From<u16> for Register2 {
 }
 
 // Implementation of the interface for this type of address
-impl<R> RegisterInterface<R, u8> for DeviceDriver
+impl<R> RegisterInterface<R, u8, DeviceError> for DeviceDriver
 where
-    R: Register<Address = u8> + Clone + From<u16>,
+    R: Register<Address = u8, Error = DeviceError> + Clone + From<u16>,
     u16: From<R>,
 {
-    fn read_register(&mut self) -> Result<R, device_register::Error> {
-        let bytes = self.registers.get(&(R::ADDRESS)).unwrap();
+    fn read_register(&mut self) -> Result<R, DeviceError> {
+        let bytes = self.registers.get(&(R::ADDRESS)).ok_or(DeviceError::Get)?;
         let reg = u16::from_be_bytes(bytes.clone());
         Ok(reg.into())
     }
 
-    fn write_register(&mut self, register: &R) -> Result<(), device_register::Error> {
+    fn write_register(&mut self, register: &R) -> Result<(), DeviceError> {
         let bytes: u16 = register.clone().into();
         self.registers.insert(R::ADDRESS, bytes.to_be_bytes());
         Ok(())

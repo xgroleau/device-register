@@ -1,7 +1,7 @@
 #[path = "./common.rs"]
 mod common;
 
-use common::DeviceDriver;
+use common::{DeviceDriver, DeviceError};
 use device_register::*;
 
 pub enum Address {
@@ -11,7 +11,7 @@ pub enum Address {
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, EORegister)]
-#[register(addr = "Address::Register1", ty = "Address")]
+#[register(addr = "Address::Register1", ty = "Address", err = "DeviceError")]
 pub struct Register1(pub u16);
 impl From<Register1> for u16 {
     fn from(val: Register1) -> Self {
@@ -26,7 +26,7 @@ impl From<u16> for Register1 {
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, EORegister)]
-#[register(addr = "Address::Register2", ty = "Address")]
+#[register(addr = "Address::Register2", ty = "Address", err = "DeviceError")]
 pub struct Register2(pub u16);
 impl From<Register2> for u16 {
     fn from(val: Register2) -> Self {
@@ -40,18 +40,21 @@ impl From<u16> for Register2 {
 }
 
 // Implementation of the interface for this type of address
-impl<R> RegisterInterface<R, Address> for DeviceDriver
+impl<R> RegisterInterface<R, Address, DeviceError> for DeviceDriver
 where
-    R: Register<Address = Address> + Clone + From<u16>,
+    R: Register<Address = Address, Error = DeviceError> + Clone + From<u16>,
     u16: From<R>,
 {
-    fn read_register(&mut self) -> Result<R, device_register::Error> {
-        let bytes = self.registers.get(&(R::ADDRESS as u8)).unwrap();
+    fn read_register(&mut self) -> Result<R, DeviceError> {
+        let bytes = self
+            .registers
+            .get(&(R::ADDRESS as u8))
+            .ok_or(DeviceError::Get)?;
         let reg = u16::from_be_bytes(bytes.clone());
         Ok(reg.into())
     }
 
-    fn write_register(&mut self, register: &R) -> Result<(), device_register::Error> {
+    fn write_register(&mut self, register: &R) -> Result<(), DeviceError> {
         let bytes: u16 = register.clone().into();
         self.registers.insert(R::ADDRESS as u8, bytes.to_be_bytes());
         Ok(())

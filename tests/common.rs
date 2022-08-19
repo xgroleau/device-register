@@ -16,3 +16,8 @@ impl DeviceDriver {
         Self { registers }
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeviceError {
+    Get,
+}
