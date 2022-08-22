@@ -105,7 +105,7 @@ jobs:
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.57.0
+          toolchain: 1.56.1
           override: true
 
   # Doesn't try to build async version of the lib
