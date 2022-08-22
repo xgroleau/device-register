@@ -17,6 +17,7 @@ jobs:
         with:
           toolchain: nightly
           override: true
+          componenets: clippy
 
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
@@ -44,6 +45,7 @@ jobs:
         with:
           toolchain: nightly
           override: true
+          componenets: rustfmt
 
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
