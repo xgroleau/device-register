@@ -2,12 +2,27 @@
 name = "device-register-macro"
 version = "0.1.0"
 edition = "2021"
-authors = [ "Xavier Groleau <xavgroleau@gmail.com>" ]
+authors = ["xgroleau <grox2901@usherbrooke.ca>"]
+repository = "https://github.com/xgroleau/device-register"
+license = "MIT OR Apache-2.0"
+homepage= "https://github.com/xgroleau/device-register"
+description = "A no-std toolkit to describe the register of your peropherals to ease driver development"
+documentation = "https://docs.rs/device-register-async"
+readme = "README.md"
+keywords = ["driver", "embedded-hal-driver", "macro"]
+categories = ["embedded", "hardware-support"]
+
+exclude = [
+    "flake.nix",
+    "flake.lock",
+    ".envrc",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 proc-macro = true
+path = "src/lib.rs"
 
 [dependencies]
 syn = { version = "1.0.91", features = ["extra-traits"] }

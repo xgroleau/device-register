@@ -15,5 +15,7 @@
 
         rustpkg = pkgs.rust-bin.nightly.latest.default;
 
-      in with pkgs; { devShell = mkShell { buildInputs = [ rustpkg ]; }; });
+      in with pkgs; {
+        devShell = mkShell { buildInputs = [ cargo-release rustpkg ]; };
+      });
 }
