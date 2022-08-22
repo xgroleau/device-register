@@ -23,6 +23,7 @@ impl Default for DeviceDriver {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum DeviceError {
     Get,
 }

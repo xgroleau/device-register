@@ -70,9 +70,10 @@ fn impl_register(ast: &syn::DeriveInput) -> syn::Result<proc_macro2::TokenStream
     let addr = reg.addr;
     let ty = reg.ty.unwrap_or_else(|| syn::parse_str("u8").unwrap());
     let err = reg.err;
+    let (impl_gen, type_gen, where_gen) = &ast.generics.split_for_impl();
     Ok(quote! {
         #[allow(dead_code)]
-        impl device_register::Register for #name {
+        impl #impl_gen device_register::Register for #name #type_gen #where_gen {
             type Address = #ty;
             type Error = #err;
             const ADDRESS: Self::Address = #addr;
@@ -96,10 +97,11 @@ pub fn ro_register(input: TokenStream) -> TokenStream {
 
 fn impl_ro_register(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
     let name = &ast.ident;
+    let (impl_gen, type_gen, where_gen) = &ast.generics.split_for_impl();
 
     quote! {
         #[allow(dead_code)]
-        impl device_register::ReadableRegister for #name {}
+        impl #impl_gen device_register::ReadableRegister for #name #type_gen #where_gen{}
     }
 }
 
@@ -130,9 +132,10 @@ pub fn re_register(input: TokenStream) -> TokenStream {
 
 fn impl_eo_register(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
     let name = &ast.ident;
+    let (impl_gen, type_gen, where_gen) = &ast.generics.split_for_impl();
     quote! {
         #[allow(dead_code)]
-        impl device_register::EditableRegister for #name {}
+        impl #impl_gen device_register::EditableRegister for #name #type_gen #where_gen {}
     }
 }
 
@@ -164,8 +167,9 @@ pub fn rw_register(input: TokenStream) -> TokenStream {
 
 fn impl_wo_register(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
     let name = &ast.ident;
+    let (impl_gen, type_gen, where_gen) = &ast.generics.split_for_impl();
     quote! {
         #[allow(dead_code)]
-        impl device_register::WritableRegister for #name {}
+        impl #impl_gen device_register::WritableRegister for #name #type_gen #where_gen {}
     }
 }
