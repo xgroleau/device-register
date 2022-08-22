@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/device-register)](https://crates.io/crates/device-register) [![documentation](https://docs.rs/device-register/badge.svg)](https://docs.rs/device-register)
 
-A zero cost toolkit to describe the register of your devies to ease driver development with `no_std` support.
+A `no_std`, zero cost toolkit to describe the registers of a device to ease driver development.
 * `no_std` support
 * Zero cost, no use of dyn
 * No dsl, just a derive macro and impl a trait.
@@ -27,8 +27,9 @@ pub struct Register0(pub u16);
 ```
 The your driver only need to implement the [RegisterInterface](crate::RegisterInterface)
 
-#### Completed example
-Here is a complete example. See the `tests` folder for more, or checkout the [tmp117](https://github.com/xgroleau/tmp117-rs) driver for actual usage.
+#### Complete example
+Here is a complete example.
+See the `tests` folder for more, or checkout the [tmp117](https://github.com/xgroleau/tmp117-rs) driver for actual usage.
 
 ```rust
 use std::collections::HashMap;
@@ -37,7 +38,7 @@ use device_register::*;
 // The type of the address used by the driver
 struct Address(pub u8);
 
-// The type of the error
+// The type of the error, lets have none for now
 type DeviceError = ();
 
 // We define the register with Read/Write permission
