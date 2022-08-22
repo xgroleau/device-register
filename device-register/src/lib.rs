@@ -4,6 +4,7 @@
 //! * `no_std` support
 //! * Zero cost, no use of dyn
 //! * No dsl, just a derive macro and impl a trait.
+//! * Error passthrough
 //!
 //! ## Usage
 //! Simply derive using `XXRegister`, where XX is the premission.
@@ -27,7 +28,8 @@
 //! The your driver only need to implement the [RegisterInterface](crate::RegisterInterface)
 //!
 //! ### Completed example
-//! Here is a complete example. See the `tests` folder for more.
+//! Here is a complete example. See the `tests` folder for more, or checkout the [tmp117](https://github.com/xgroleau/tmp117-rs) driver for actual usage.
+//!
 //! ```rust
 //! use std::collections::HashMap;
 //! use device_register::*;
