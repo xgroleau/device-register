@@ -90,7 +90,6 @@ jobs:
         with:
           command: test
 
-  # Doesn't try to build async version of the lib
   msrv:
     runs-on: ubuntu-latest
     steps:
@@ -102,6 +101,7 @@ jobs:
         with:
           toolchain: 1.60.0
 
+  # Doesn't try to build async version of the lib
       - name: Run check
         uses: actions-rs/cargo@v1.0.1
         with:
