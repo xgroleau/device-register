@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 homepage= "https://github.com/xgroleau/device-register"
 description = "A no-std toolkit to describe the register of your peropherals to ease driver development"
 documentation = "https://docs.rs/device-register-async"
-readme = "../README.md"
+readme = "README.md"
 keywords = ["driver", "embedded-hal-driver", "no-std"]
 categories = ["embedded", "hardware-support", "no-std"]
 
