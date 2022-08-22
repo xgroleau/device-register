@@ -2,7 +2,7 @@
 //!
 //! An async version of the trait from the crate [device-register](device_register)
 //! Note that you will need to use nightly and
-//! enable `generic_associated_types` and `type_alias_impl_trait`.
+//! enable `generic_associated_types` and `type_alias_impl_trait` features.
 #![no_std]
 #![deny(unsafe_code, missing_docs)]
 #![feature(generic_associated_types)]
