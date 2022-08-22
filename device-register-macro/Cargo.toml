@@ -22,6 +22,7 @@ exclude = [
 
 [lib]
 proc-macro = true
+path = "src/lib.rs"
 
 [dependencies]
 syn = { version = "1.0.91", features = ["extra-traits"] }
