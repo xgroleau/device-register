@@ -1,4 +1,4 @@
-//! A crate for the macro used in the device-register crate. See device-register crate for more information
+//! A crate for the macro used in the device-register crate. See device-register crate for more information.
 #![deny(unsafe_code, missing_docs)]
 
 use darling::{FromDeriveInput, FromMeta, ToTokens};
