@@ -16,6 +16,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          override: true
 
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
@@ -42,6 +43,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          override: true
 
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
@@ -62,6 +64,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          override: true
 
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
@@ -78,9 +81,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install toolchain
-        uses: actions/checkout@v2
+        uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          override: true
 
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
@@ -100,6 +104,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: 1.60.0
+          override: true
 
   # Doesn't try to build async version of the lib
       - name: Run check
