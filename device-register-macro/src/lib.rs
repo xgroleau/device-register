@@ -139,7 +139,7 @@ fn impl_eo_register(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
     }
 }
 
-/// Create a read/write register
+/// Create a write only register
 #[proc_macro_derive(WORegister, attributes(register))]
 pub fn wo_register(input: TokenStream) -> TokenStream {
     // Parse the representation
