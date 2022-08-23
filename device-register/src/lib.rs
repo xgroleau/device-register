@@ -25,7 +25,7 @@
 //! #[register( addr = "42", ty = "u8", err = "DeviceError" )]
 //! pub struct Register0(pub u16);
 //! ```
-//! The your driver only need to implement the [RegisterInterface](crate::RegisterInterface)
+//! Then, your driver only need to implement the [RegisterInterface](crate::RegisterInterface) to have access to the read/write/edit traits.
 //!
 //! ### Complete example
 //! Here is a complete example.
