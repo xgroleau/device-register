@@ -18,14 +18,17 @@ The following permissions are supported
 * [`RWRegister`](crate::RWRegister), Read, write and edit permission.
 
 To define a register, simply derive using the desired permission.
-Then use the `register` attribute to define it's address, type for the address and the error type.
+
+Then use the `register` attribute to define it's address, type for the address and the error.
+
+
 ```rust
 
 #[derive(RWRegister)]
 #[register( addr = "42", ty = "u8", err = "DeviceError" )]
 pub struct Register0(pub u16);
 ```
-The your driver only need to implement the [RegisterInterface](crate::RegisterInterface)
+Then, your driver only need to implement the [RegisterInterface](crate::RegisterInterface) to have access to the read/write/edit traits.
 
 #### Complete example
 Here is a complete example.
@@ -38,7 +41,7 @@ use device_register::*;
 // The type of the address used by the driver
 struct Address(pub u8);
 
-// The type of the error, lets have none for now
+// The type of the error, lets have none for now,
 type DeviceError = ();
 
 // We define the register with Read/Write permission
@@ -52,6 +55,20 @@ struct DeviceDriver {
     // Simulate reading from the device
     pub registers: HashMap<u8, u16>,
 }
+
+// Implement a method directly, by passing the trait for specific usecases like async
+impl DeviceDriver {
+    pub async fn read_async<R>(&self) -> R
+    where
+        R: ReadableRegister<Address = Address> + From<u16>,
+    {
+        async {
+            let bytes = self.registers.get(&R::ADDRESS.0).unwrap();
+            bytes.clone().into()
+        }.await
+    }
+}
+
 
 // We implement the required interface
 impl<R> RegisterInterface<R, Address, DeviceError> for DeviceDriver
@@ -86,10 +103,18 @@ device.edit(|r: &mut Register0| {
     r
 }).unwrap();
 
+
 let read: Register0 = device.read().unwrap();
 assert_eq!(read, Register0(43));
 
+// Custom implementation, async is an example of usecase for custom implements
+tokio_test::block_on( async {
+    let read_async: Register0 = device.read_async().await;
+    assert_eq!(read, Register0(43));
+} );
+
 ```
+
 
 ### License
 Licensed under either of

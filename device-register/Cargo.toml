@@ -1,6 +1,6 @@
 [package]
 name = "device-register"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["xgroleau <grox2901@usherbrooke.ca>"]
 repository = "https://github.com/xgroleau/device-register"
@@ -23,3 +23,5 @@ device-register-macro = { path = "../device-register-macro", version = "0.1.0" }
 
 [dev-dependencies]
 modular-bitfield = "0.11.2"
+tokio-test = "0.4.2"
+
