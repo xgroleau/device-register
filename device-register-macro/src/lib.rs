@@ -59,9 +59,6 @@ struct Register {
 
     /// The type of the address, defaults to a u8
     ty: Option<syn::Type>,
-
-    /// The type of the error
-    err: Option<syn::Type>,
 }
 
 fn impl_register(ast: &syn::DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
@@ -69,13 +66,11 @@ fn impl_register(ast: &syn::DeriveInput) -> syn::Result<proc_macro2::TokenStream
     let reg = Register::from_derive_input(ast)?;
     let addr = reg.addr;
     let ty = reg.ty.unwrap_or_else(|| syn::parse_str("u8").unwrap());
-    let err = reg.err.unwrap_or_else(|| syn::parse_str("()").unwrap());
     let (impl_gen, type_gen, where_gen) = &ast.generics.split_for_impl();
     Ok(quote! {
         #[allow(dead_code)]
         impl #impl_gen device_register::Register for #name #type_gen #where_gen {
             type Address = #ty;
-            type Error = #err;
             const ADDRESS: Self::Address = #addr;
         }
     })

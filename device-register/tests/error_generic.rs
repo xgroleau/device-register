@@ -2,8 +2,6 @@
 //! Then the user could use the registers from one librare with a device of the other.  Using newtypes is recommended
 mod common;
 
-use std::marker::PhantomData;
-
 use common::DeviceDriver;
 use device_register::*;
 
@@ -13,46 +11,48 @@ pub enum Error<E> {
 }
 
 #[derive(Debug, Clone, Copy, RWRegister)]
-#[register(addr = "common::REGISTER1", err = "Error<E>")]
-pub struct Register1<E>(pub u16, PhantomData<E>);
-impl<E> From<Register1<E>> for u16 {
-    fn from(val: Register1<E>) -> Self {
+#[register(addr = "common::REGISTER1")]
+pub struct Register1(pub u16);
+impl From<Register1> for u16 {
+    fn from(val: Register1) -> Self {
         val.0
     }
 }
-impl<E> From<u16> for Register1<E> {
+impl From<u16> for Register1 {
     fn from(val: u16) -> Self {
-        Register1(val, PhantomData)
+        Register1(val)
     }
 }
 
 #[derive(Debug, Clone, Copy, RWRegister)]
-#[register(addr = "common::REGISTER2", err = "Error<E>")]
-pub struct Register2<E>(pub u16, PhantomData<E>);
-impl<E> From<Register2<E>> for u16 {
-    fn from(val: Register2<E>) -> Self {
+#[register(addr = "common::REGISTER2")]
+pub struct Register2(pub u16);
+impl From<Register2> for u16 {
+    fn from(val: Register2) -> Self {
         val.0
     }
 }
-impl<E> From<u16> for Register2<E> {
+impl From<u16> for Register2 {
     fn from(val: u16) -> Self {
-        Register2(val, PhantomData)
+        Register2(val)
     }
 }
 
 // Implementation of the interface for a u8
-impl<R> RegisterInterface<R, u8, Error<u8>> for DeviceDriver
+impl<R> RegisterInterface<R, u8> for DeviceDriver
 where
-    R: Register<Address = u8, Error = Error<u8>> + Clone + From<u16>,
+    R: Register<Address = u8> + Clone + From<u16>,
     u16: From<R>,
 {
-    fn read_register(&mut self) -> Result<R, Error<u8>> {
+    type Error = Error<u8>;
+
+    fn read_register(&mut self) -> Result<R, Self::Error> {
         let bytes = self.registers.get(&(R::ADDRESS)).ok_or(Error::Bus(1))?;
         let reg = u16::from_be_bytes(*bytes);
         Ok(reg.into())
     }
 
-    fn write_register(&mut self, register: &R) -> Result<(), Error<u8>> {
+    fn write_register(&mut self, register: &R) -> Result<(), Self::Error> {
         let bytes: u16 = register.clone().into();
         self.registers.insert(R::ADDRESS, bytes.to_be_bytes());
         Ok(())
@@ -69,8 +69,8 @@ fn read_generic_error() {
         .registers
         .insert(common::REGISTER2, 0x45_u16.to_be_bytes());
 
-    let reg1: Register1<_> = device.read().unwrap();
-    let reg2: Register2<_> = device.read().unwrap();
+    let reg1: Register1 = device.read().unwrap();
+    let reg2: Register2 = device.read().unwrap();
 
     // device.edit(|r: &mut Register1<_>| r).unwrap();
 

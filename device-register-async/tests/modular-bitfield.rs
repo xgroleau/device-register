@@ -15,11 +15,7 @@ pub struct Address(pub u8);
 #[bitfield]
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, RWRegister)]
-#[register(
-    addr = "Address(common::REGISTER1)",
-    ty = "Address",
-    err = "DeviceError"
-)]
+#[register(addr = "Address(common::REGISTER1)", ty = "Address")]
 pub struct Register1 {
     pub field1: u8,
     pub field2: u8,
@@ -28,23 +24,21 @@ pub struct Register1 {
 #[bitfield]
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, RWRegister)]
-#[register(
-    addr = "Address(common::REGISTER2)",
-    ty = "Address",
-    err = "DeviceError"
-)]
+#[register(addr = "Address(common::REGISTER2)", ty = "Address")]
 pub struct Register2 {
     pub field1: u8,
     pub field2: u8,
 }
 
 // Implementation of the interface for this type of address
-impl<R> RegisterInterface<R, Address, DeviceError> for DeviceDriver
+impl<R> RegisterInterface<R, Address> for DeviceDriver
 where
-    R: Register<Address = Address, Error = DeviceError> + Clone + From<u16>,
+    R: Register<Address = Address> + Clone + From<u16>,
     u16: From<R>,
 {
-    type ReadOutput<'a> = impl Future<Output = Result<R, R::Error>>
+    type Error = DeviceError;
+
+    type ReadOutput<'a> = impl Future<Output = Result<R, Self::Error>>
     where
         Self: 'a ;
 
@@ -59,7 +53,7 @@ where
         }
     }
 
-    type WriteOutput<'a> = impl Future<Output = Result<(), R::Error>>
+    type WriteOutput<'a> = impl Future<Output = Result<(), Self::Error>>
     where
         Self: 'a,
         R: 'a;

@@ -25,7 +25,7 @@
 //! # pub type DeviceError = ();
 //!
 //! #[derive(RWRegister)]
-//! #[register( addr = "42", ty = "u8", err = "DeviceError" )]
+//! #[register( addr = "42", ty = "u8")]
 //! pub struct Register0(pub u16);
 //! ```
 //! Then, your driver only need to implement the [RegisterInterface](crate::RegisterInterface) to have access to the read/write/edit traits.
@@ -41,13 +41,10 @@
 //! // The type of the address used by the driver
 //! struct Address(pub u8);
 //!
-//! // The type of the error, lets have none for now,
-//! type DeviceError = ();
-//!
 //! // We define the register with Read/Write permission
 //! // Then we pass the address type, value and error type of the driveer
 //! #[derive(Debug, Copy, PartialEq, Eq, Clone, RWRegister)]
-//! #[register( addr = "Address(1)", ty = "Address", err = "DeviceError" )]
+//! #[register( addr = "Address(1)", ty = "Address")]
 //! struct Register0(pub u16);
 //! # impl From<Register0> for u16 {
 //! #     fn from(val: Register0) -> Self {
@@ -81,17 +78,20 @@
 //!
 //!
 //! // We implement the required interface
-//! impl<R> RegisterInterface<R, Address, DeviceError> for DeviceDriver
+//! impl<R> RegisterInterface<R, Address> for DeviceDriver
 //! where
-//!     R: Register<Address = Address, Error = DeviceError> + Clone + From<u16>,
+//!     R: Register<Address = Address> + Clone + From<u16>,
 //!     u16: From<R>,
 //! {
-//!     fn read_register(&mut self) -> Result<R, DeviceError> {
+//!     // The type of the error, lets have none for now,
+//!     type Error = ();
+//!
+//!     fn read_register(&mut self) -> Result<R, Self::Error> {
 //!         let bytes = self.registers.get(&R::ADDRESS.0).unwrap();
 //!         Ok(bytes.clone().into())
 //!     }
 //!
-//!     fn write_register(&mut self, register: &R) -> Result<(), DeviceError> {
+//!     fn write_register(&mut self, register: &R) -> Result<(), Self::Error> {
 //!         self.registers.insert(R::ADDRESS.0, register.clone().into());
 //!         Ok(())
 //!     }
@@ -148,9 +148,6 @@ pub trait Register {
     /// Type of the adress, can be used to constrain the registers accepted
     type Address;
 
-    /// The error type for the read/write of the register
-    type Error;
-
     /// The address of the register
     const ADDRESS: Self::Address;
 }
@@ -168,75 +165,93 @@ pub trait WritableRegister: Register {}
 
 /// Traits that define how to read and write the registers.
 /// Note that those functions should mostly just be implemented and not used since they are not bound by Read/Write/Edit permission.
-pub trait RegisterInterface<R, A, E>
+pub trait RegisterInterface<R, A>
 where
-    R: Register<Address = A, Error = E>,
+    R: Register<Address = A>,
 {
+    /// Error type returned by the interface
+    type Error;
+
     /// Reads a register and returns it
-    fn read_register(&mut self) -> Result<R, R::Error>;
+    fn read_register(&mut self) -> Result<R, Self::Error>;
 
     /// Writes a register to the device
-    fn write_register(&mut self, register: &R) -> Result<(), R::Error>;
+    fn write_register(&mut self, register: &R) -> Result<(), Self::Error>;
 }
 
 /// Trait to safely read a register. Only a readable register can be read.
-pub trait ReadRegister<R, A, E>
+pub trait ReadRegister<R, A>
 where
-    R: ReadableRegister<Address = A, Error = E>,
+    R: ReadableRegister<Address = A>,
 {
+    /// Error type returned by reading the register
+    type Error;
+
     /// Read a register
-    fn read(&mut self) -> Result<R, R::Error>;
+    fn read(&mut self) -> Result<R, Self::Error>;
 }
 
 /// Trait to safely write a register. Only a writable register can be written to.
-pub trait WriteRegister<R, A, E>
+pub trait WriteRegister<R, A>
 where
-    R: WritableRegister<Address = A, Error = E>,
+    R: WritableRegister<Address = A>,
 {
+    /// Error type returned by writing the register
+    type Error;
+
     /// Write a register
-    fn write(&mut self, register: R) -> Result<(), R::Error>;
+    fn write(&mut self, register: R) -> Result<(), Self::Error>;
 }
 
 /// Trait to safely read-edit-write a register.
 /// Usefull when a register has reserved values for internal uses.
 /// Avoids writing garbage to the reserved  bits.
-pub trait EditRegister<R, A, E>
+pub trait EditRegister<R, A>
 where
-    R: EditableRegister<Address = A, Error = E>,
+    R: EditableRegister<Address = A>,
 {
+    /// Error type returned by editing the register
+    type Error;
+
     /// Edit a register. The closure takes a reference to the register,
     /// the same register must be edited, then returned.
-    fn edit<F>(&mut self, f: F) -> Result<(), R::Error>
+    fn edit<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
         for<'w> F: FnOnce(&'w mut R) -> &'w mut R;
 }
 
-impl<I, R, A, E> ReadRegister<R, A, E> for I
+impl<I, R, A> ReadRegister<R, A> for I
 where
-    R: ReadableRegister<Address = A, Error = E>,
-    I: RegisterInterface<R, A, E>,
+    R: ReadableRegister<Address = A>,
+    I: RegisterInterface<R, A>,
 {
-    fn read(&mut self) -> Result<R, R::Error> {
+    type Error = I::Error;
+
+    fn read(&mut self) -> Result<R, Self::Error> {
         self.read_register()
     }
 }
 
-impl<I, R, A, E> WriteRegister<R, A, E> for I
+impl<I, R, A> WriteRegister<R, A> for I
 where
-    R: WritableRegister<Address = A, Error = E>,
-    I: RegisterInterface<R, A, E>,
+    R: WritableRegister<Address = A>,
+    I: RegisterInterface<R, A>,
 {
-    fn write(&mut self, register: R) -> Result<(), R::Error> {
+    type Error = I::Error;
+
+    fn write(&mut self, register: R) -> Result<(), Self::Error> {
         self.write_register(&register)
     }
 }
 
-impl<I, R, A, E> EditRegister<R, A, E> for I
+impl<I, R, A> EditRegister<R, A> for I
 where
-    R: EditableRegister<Address = A, Error = E>,
-    I: RegisterInterface<R, A, E>,
+    R: EditableRegister<Address = A>,
+    I: RegisterInterface<R, A>,
 {
-    fn edit<F>(&mut self, f: F) -> Result<(), R::Error>
+    type Error = I::Error;
+
+    fn edit<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
         for<'w> F: FnOnce(&'w mut R) -> &'w mut R,
     {

@@ -13,7 +13,7 @@ pub enum Address {
 }
 
 #[derive(Debug, Clone, Copy, EORegister)]
-#[register(addr = "Address::Register1", ty = "Address", err = "DeviceError")]
+#[register(addr = "Address::Register1", ty = "Address")]
 pub struct Register1(pub u16);
 impl From<Register1> for u16 {
     fn from(val: Register1) -> Self {
@@ -27,7 +27,7 @@ impl From<u16> for Register1 {
 }
 
 #[derive(Debug, Clone, Copy, EORegister)]
-#[register(addr = "Address::Register2", ty = "Address", err = "DeviceError")]
+#[register(addr = "Address::Register2", ty = "Address")]
 pub struct Register2(pub u16);
 impl From<Register2> for u16 {
     fn from(val: Register2) -> Self {
@@ -41,12 +41,14 @@ impl From<u16> for Register2 {
 }
 
 // Implementation of the interface for this type of address
-impl<R> RegisterInterface<R, Address, DeviceError> for DeviceDriver
+impl<R> RegisterInterface<R, Address> for DeviceDriver
 where
-    R: Register<Address = Address, Error = DeviceError> + Clone + From<u16>,
+    R: Register<Address = Address> + Clone + From<u16>,
     u16: From<R>,
 {
-    type ReadOutput<'a> = impl Future<Output = Result<R, R::Error>>
+    type Error = DeviceError;
+
+    type ReadOutput<'a> = impl Future<Output = Result<R, Self::Error>>
     where
         Self: 'a ;
 
@@ -61,7 +63,7 @@ where
         }
     }
 
-    type WriteOutput<'a> = impl Future<Output = Result<(), R::Error>>
+    type WriteOutput<'a> = impl Future<Output = Result<(), Self::Error>>
     where
         Self: 'a,
         R: 'a;
