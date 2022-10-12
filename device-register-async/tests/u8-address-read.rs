@@ -11,7 +11,7 @@ use device_register_async::*;
 use futures::Future;
 
 #[derive(Debug, Clone, Copy, RORegister)]
-#[register(addr = "common::REGISTER1", err = "DeviceError")] // No need to specify  the type since it's u8  by default
+#[register(addr = "common::REGISTER1")] // No need to specify  the type since it's u8  by default
 pub struct Register1(pub u16);
 impl From<Register1> for u16 {
     fn from(val: Register1) -> Self {
@@ -25,7 +25,7 @@ impl From<u16> for Register1 {
 }
 
 #[derive(Debug, Clone, Copy, RORegister)]
-#[register(addr = "common::REGISTER2", err = "DeviceError")]
+#[register(addr = "common::REGISTER2")]
 pub struct Register2(pub u16);
 impl From<Register2> for u16 {
     fn from(val: Register2) -> Self {
@@ -39,12 +39,14 @@ impl From<u16> for Register2 {
 }
 
 // Implementation of the interface for a u8
-impl<R> RegisterInterface<R, u8, DeviceError> for DeviceDriver
+impl<R> RegisterInterface<R, u8> for DeviceDriver
 where
-    R: Register<Address = u8, Error = DeviceError> + Clone + From<u16>,
+    R: Register<Address = u8> + Clone + From<u16>,
     u16: From<R>,
 {
-    type ReadOutput<'a> = impl Future<Output = Result<R, R::Error>>
+    type Error = DeviceError;
+
+    type ReadOutput<'a> = impl Future<Output = Result<R, Self::Error>>
     where
         Self: 'a
         ;
@@ -57,7 +59,7 @@ where
         }
     }
 
-    type WriteOutput<'a> = impl Future<Output = Result<(), R::Error>>
+    type WriteOutput<'a> = impl Future<Output = Result<(), Self::Error>>
     where
         Self: 'a,
         R: 'a;

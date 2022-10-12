@@ -25,7 +25,7 @@ Then use the `register` attribute to define it's address, type for the address a
 ```rust
 
 #[derive(RWRegister)]
-#[register( addr = "42", ty = "u8", err = "DeviceError" )]
+#[register( addr = "42", ty = "u8")]
 pub struct Register0(pub u16);
 ```
 Then, your driver only need to implement the [RegisterInterface](crate::RegisterInterface) to have access to the read/write/edit traits.
@@ -41,13 +41,10 @@ use device_register::*;
 // The type of the address used by the driver
 struct Address(pub u8);
 
-// The type of the error, lets have none for now,
-type DeviceError = ();
-
 // We define the register with Read/Write permission
 // Then we pass the address type, value and error type of the driveer
 #[derive(Debug, Copy, PartialEq, Eq, Clone, RWRegister)]
-#[register( addr = "Address(1)", ty = "Address", err = "DeviceError" )]
+#[register( addr = "Address(1)", ty = "Address")]
 struct Register0(pub u16);
 
 // Mock of the device driver
@@ -71,17 +68,20 @@ impl DeviceDriver {
 
 
 // We implement the required interface
-impl<R> RegisterInterface<R, Address, DeviceError> for DeviceDriver
+impl<R> RegisterInterface<R, Address> for DeviceDriver
 where
-    R: Register<Address = Address, Error = DeviceError> + Clone + From<u16>,
+    R: Register<Address = Address> + Clone + From<u16>,
     u16: From<R>,
 {
-    fn read_register(&mut self) -> Result<R, DeviceError> {
+    // The type of the error, lets have none for now,
+    type Error = ();
+
+    fn read_register(&mut self) -> Result<R, Self::Error> {
         let bytes = self.registers.get(&R::ADDRESS.0).unwrap();
         Ok(bytes.clone().into())
     }
 
-    fn write_register(&mut self, register: &R) -> Result<(), DeviceError> {
+    fn write_register(&mut self, register: &R) -> Result<(), Self::Error> {
         self.registers.insert(R::ADDRESS.0, register.clone().into());
         Ok(())
     }
@@ -128,5 +128,3 @@ at your option.
 ### Contribution
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
-
-License: MIT OR Apache-2.0
