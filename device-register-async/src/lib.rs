@@ -5,6 +5,7 @@
 //! enable and `type_alias_impl_trait` features.
 #![no_std]
 #![deny(unsafe_code, missing_docs)]
+#![feature(generic_associated_types)]
 #![feature(type_alias_impl_trait)]
 
 pub use device_register;
