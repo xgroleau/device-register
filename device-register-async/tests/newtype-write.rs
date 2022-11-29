@@ -1,11 +1,11 @@
-#![feature(generic_associated_types)]
-#![feature(type_alias_impl_trait)]
+#![allow(incomplete_features)]
+#![feature(async_fn_in_trait, impl_trait_projections)]
+
 mod common;
 
 use common::{DeviceDriver, DeviceError};
 use device_register::{Register, WORegister};
 use device_register_async::*;
-use futures::Future;
 
 pub struct Address(pub u8);
 
@@ -45,32 +45,19 @@ where
 {
     type Error = DeviceError;
 
-    type ReadOutput<'a> = impl Future<Output = Result<R, Self::Error>>
-    where
-        Self: 'a ;
-
-    fn read_register(&mut self) -> Self::ReadOutput<'_> {
-        async {
-            let bytes = self
-                .registers
-                .get(&(R::ADDRESS.0))
-                .ok_or(DeviceError::Get)?;
-            let reg = u16::from_be_bytes(*bytes);
-            Ok(reg.into())
-        }
+    async fn read_register(&mut self) -> Result<R, Self::Error> {
+        let bytes = self
+            .registers
+            .get(&(R::ADDRESS.0))
+            .ok_or(DeviceError::Get)?;
+        let reg = u16::from_be_bytes(*bytes);
+        Ok(reg.into())
     }
 
-    type WriteOutput<'a> = impl Future<Output = Result<(), Self::Error>>
-    where
-        Self: 'a,
-        R: 'a;
-
-    fn write_register<'a>(&'a mut self, register: &'a R) -> Self::WriteOutput<'a> {
-        async {
-            let bytes: u16 = register.clone().into();
-            self.registers.insert(R::ADDRESS.0, bytes.to_be_bytes());
-            Ok(())
-        }
+    async fn write_register(&mut self, register: &R) -> Result<(), Self::Error> {
+        let bytes: u16 = register.clone().into();
+        self.registers.insert(R::ADDRESS.0, bytes.to_be_bytes());
+        Ok(())
     }
 }
 

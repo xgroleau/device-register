@@ -4,7 +4,12 @@
 
 An async version of the trait from the crate [device-register](device_register)
 Note that you will need to use nightly and
-enable `generic_associated_types` and `type_alias_impl_trait`.
+add those features.
+
+```
+#![allow(incomplete_features)]
+#![feature(async_fn_in_trait, impl_trait_projections)]
+```
 
 For now you are probably better off using the traits directly, check the `manual-impl` test in the `deivce-register` crate.
 

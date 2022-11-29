@@ -5,12 +5,11 @@
 //! enable and `type_alias_impl_trait` features.
 #![no_std]
 #![deny(unsafe_code, missing_docs)]
-#![feature(generic_associated_types)]
-#![feature(type_alias_impl_trait)]
+#![allow(incomplete_features)]
+#![feature(async_fn_in_trait, impl_trait_projections)]
 
 pub use device_register;
 use device_register::{EditableRegister, ReadableRegister, Register, WritableRegister};
-use futures::Future;
 
 /// Traits that define how to read and write the registers.
 /// Note that those functions should mostly just be implemented and not used since they are not bound by Read/Write/Edit permission.
@@ -21,22 +20,11 @@ where
     /// The error type returned by the interface
     type Error;
 
-    /// The return type of the read_register function
-    type ReadOutput<'a>: Future<Output = Result<R, Self::Error>>
-    where
-        Self: 'a;
-
     /// Reads a register and returns it
-    fn read_register(&mut self) -> Self::ReadOutput<'_>;
-
-    /// The return type of the write_register function
-    type WriteOutput<'a>: Future<Output = Result<(), Self::Error>>
-    where
-        Self: 'a,
-        R: 'a;
+    async fn read_register(&mut self) -> Result<R, Self::Error>;
 
     /// Writes a register to the device
-    fn write_register<'a>(&'a mut self, register: &'a R) -> Self::WriteOutput<'a>;
+    async fn write_register(&mut self, register: &R) -> Result<(), Self::Error>;
 }
 
 /// Trait to safely read a register. Only a readable register can be read.
@@ -47,13 +35,8 @@ where
     /// The error type returned by reading a register
     type Error;
 
-    /// The return type of the read
-    type Output<'a>: Future<Output = Result<R, Self::Error>>
-    where
-        Self: 'a;
-
     /// Read a register
-    fn read(&mut self) -> Self::Output<'_>;
+    async fn read(&mut self) -> Result<R, Self::Error>;
 }
 
 /// Trait to safely write a register. Only a writable register can be written to.
@@ -64,14 +47,8 @@ where
     /// The error type returned by writing a register
     type Error;
 
-    /// The return type of the write
-    type Output<'a>: Future<Output = Result<(), Self::Error>>
-    where
-        Self: 'a,
-        R: 'a;
-
     /// Write a register
-    fn write(&mut self, register: R) -> Self::Output<'_>;
+    async fn write(&mut self, register: R) -> Result<(), Self::Error>;
 }
 
 /// Trait to safely read-edit-write a register.
@@ -84,17 +61,11 @@ where
     /// The error type returned by editing a register
     type Error;
 
-    /// The return type of the write
-    type Output<'a, F>: Future<Output = Result<(), Self::Error>>
-    where
-        Self: 'a,
-        F: FnOnce(R) -> R + 'a;
-
     /// Edit a register. The closure takes a reference to the register,
     /// the same register must be edited, then returned.
-    fn edit<'a, F>(&'a mut self, f: F) -> Self::Output<'a, F>
+    async fn edit<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
-        F: FnOnce(R) -> R + 'a;
+        for<'w> F: FnOnce(&'w mut R) -> &'w mut R;
 }
 
 impl<I, R, A> ReadRegister<R, A> for I
@@ -105,10 +76,8 @@ where
 {
     type Error = I::Error;
 
-    type Output<'a> = impl Future<Output = Result<R, Self::Error>> +'a where Self: 'a;
-
-    fn read(&mut self) -> Self::Output<'_> {
-        self.read_register()
+    async fn read(&mut self) -> Result<R, Self::Error> {
+        self.read_register().await
     }
 }
 
@@ -120,10 +89,8 @@ where
 {
     type Error = I::Error;
 
-    type Output<'a> = impl Future<Output = Result<(), Self::Error>> +'a where Self: 'a, R: 'a;
-
-    fn write(&mut self, register: R) -> Self::Output<'_> {
-        async move { self.write_register(&register).await }
+    async fn write(&mut self, register: R) -> Result<(), Self::Error> {
+        self.write_register(&register).await
     }
 }
 
@@ -135,19 +102,12 @@ where
 {
     type Error = I::Error;
 
-    type Output<'a, F> = impl Future<Output = Result<(), Self::Error>> +'a where
-        Self: 'a,
-        F: FnOnce(R) -> R + 'a,
-    ;
-
-    fn edit<'a, F>(&'a mut self, f: F) -> Self::Output<'a, F>
+    async fn edit<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
-        F: FnOnce(R) -> R + 'a,
+        for<'w> F: FnOnce(&'w mut R) -> &'w mut R,
     {
-        async {
-            let val = self.read_register().await?;
-            let res = f(val);
-            self.write_register(&res).await
-        }
+        let mut val = self.read_register().await?;
+        let res = f(&mut val);
+        self.write_register(res).await
     }
 }
