@@ -1,6 +1,6 @@
 //! [![crates.io](https://img.shields.io/crates/v/device-register)](https://crates.io/crates/device-register) [![documentation](https://docs.rs/device-register/badge.svg)](https://docs.rs/device-register)
 //!
-//! A `no_std`, zero cost toolkit to describe the registers of a device to ease driver development.
+//! A `no_std` library to describe the registers permissions of a device to ease driver development.
 //! * `no_std` support
 //! * Zero cost, no use of dyn
 //! * No dsl, just a derive macro and impl a trait.
