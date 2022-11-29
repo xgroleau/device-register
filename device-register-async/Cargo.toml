@@ -20,7 +20,7 @@ exclude = [
 
 
 [dependencies]
-device-register = { version = "0.2.0", path = "../device-register" }
+device-register = { version = "0.3.0", path = "../device-register" }
 futures = { version = "0.3.23", default-features = false }
 
 [dev-dependencies]
