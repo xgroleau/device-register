@@ -22,7 +22,6 @@
 //!
 //! ```rust
 //! # use device_register::*;
-//! # pub type DeviceError = ();
 //!
 //! #[derive(RWRegister)]
 //! #[register( addr = "42", ty = "u8")]
@@ -100,7 +99,7 @@
 //! let mut device = DeviceDriver{
 //!     registers:  HashMap::new(),
 //! };
-//! // We can the Read/Write/Edit the registers that uses the Address and DeviceError types.
+//! // We can the Read/Write/Edit the registers that uses the Address type.
 //! let write = Register0(42);
 //! device.write(write).unwrap();
 //!
@@ -110,7 +109,6 @@
 //!
 //! device.edit(|r: &mut Register0| {
 //!     r.0 = 43;
-//!     r
 //! }).unwrap();
 //!
 //!
@@ -217,7 +215,7 @@ where
     /// the same register must be edited, then returned.
     fn edit<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
-        for<'w> F: FnOnce(&'w mut R) -> &'w mut R;
+        for<'w> F: FnOnce(&'w mut R);
 }
 
 impl<I, R, A> ReadRegister<R, A> for I
@@ -253,10 +251,10 @@ where
 
     fn edit<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
-        for<'w> F: FnOnce(&'w mut R) -> &'w mut R,
+        for<'w> F: FnOnce(&'w mut R),
     {
         let mut val = self.read_register()?;
-        let val = f(&mut val);
-        self.write_register(val)
+        f(&mut val);
+        self.write_register(&val)
     }
 }

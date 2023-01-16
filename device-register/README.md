@@ -90,7 +90,7 @@ where
 let mut device = DeviceDriver{
     registers:  HashMap::new(),
 };
-// We can the Read/Write/Edit the registers that uses the Address and DeviceError types.
+// We can the Read/Write/Edit the registers that uses the Address type.
 let write = Register0(42);
 device.write(write).unwrap();
 
@@ -100,7 +100,6 @@ assert_eq!(read, write);
 
 device.edit(|r: &mut Register0| {
     r.0 = 43;
-    r
 }).unwrap();
 
 

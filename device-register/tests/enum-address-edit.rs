@@ -69,7 +69,6 @@ fn edit_enum_addr() {
         .edit(|r: &mut Register1| {
             assert_eq!(r.0, 0);
             r.0 = 0x42;
-            r
         })
         .unwrap();
 
@@ -77,7 +76,6 @@ fn edit_enum_addr() {
         .edit(|r: &mut Register2| {
             assert_eq!(r.0, 0);
             r.0 = 0x45;
-            r
         })
         .unwrap();
 

@@ -65,7 +65,7 @@ where
     /// the same register must be edited, then returned.
     async fn edit<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
-        for<'w> F: FnOnce(&'w mut R) -> &'w mut R;
+        for<'w> F: FnOnce(&'w mut R);
 }
 
 impl<I, R, A> ReadRegister<R, A> for I
@@ -104,10 +104,10 @@ where
 
     async fn edit<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
-        for<'w> F: FnOnce(&'w mut R) -> &'w mut R,
+        for<'w> F: FnOnce(&'w mut R),
     {
         let mut val = self.read_register().await?;
-        let res = f(&mut val);
-        self.write_register(res).await
+        f(&mut val);
+        self.write_register(&val).await
     }
 }

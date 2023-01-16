@@ -73,7 +73,6 @@ async fn modular_bitfield() {
         .edit(|r: &mut Register1| {
             r.set_field1(0);
             r.set_field2(0);
-            r
         })
         .await
         .unwrap();
@@ -81,7 +80,6 @@ async fn modular_bitfield() {
         .edit(|r: &mut Register2| {
             r.set_field1(0);
             r.set_field2(0);
-            r
         })
         .await
         .unwrap();

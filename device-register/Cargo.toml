@@ -1,6 +1,6 @@
 [package]
 name = "device-register"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 authors = ["xgroleau <xavgroleau@gmail.com>"]
 repository = "https://github.com/xgroleau/device-register"
