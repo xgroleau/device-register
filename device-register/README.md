@@ -23,6 +23,7 @@ Then use the `register` attribute to define it's address, type for the address a
 
 
 ```rust
+use device_register::*;
 
 #[derive(RWRegister)]
 #[register( addr = "42", ty = "u8")]
@@ -34,7 +35,7 @@ Then, your driver only need to implement the [RegisterInterface](crate::Register
 Here is a complete example.
 See the `tests` folder for more, or checkout the [tmp117](https://github.com/xgroleau/tmp117-rs) driver for actual usage.
 
-```rust
+```no_run
 use std::collections::HashMap;
 use device_register::*;
 
@@ -46,6 +47,18 @@ struct Address(pub u8);
 #[derive(Debug, Copy, PartialEq, Eq, Clone, RWRegister)]
 #[register( addr = "Address(1)", ty = "Address")]
 struct Register0(pub u16);
+
+impl From<u16> for Register0 {
+    fn from(value: u16) -> Self {
+        Register0(value)
+    }
+}
+
+impl From<Register0> for u16 {
+    fn from(value: Register0) -> Self {
+        value.0
+    }
+}
 
 // Mock of the device driver
 struct DeviceDriver {
@@ -114,6 +127,9 @@ tokio_test::block_on( async {
 
 ```
 
+
+### MSRV
+The minimum supported rust version is `1.75.0`, but previous versions might work with the library
 
 ### License
 Licensed under either of

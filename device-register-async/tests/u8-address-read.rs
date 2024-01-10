@@ -1,7 +1,5 @@
 //! Note that using a primitive as an address is not recommended since it would allow other libraries to also implement using the same primitive
 //! Then the user could use the registers from one librare with a device of the other.  Using newtypes is recommended
-#![allow(incomplete_features)]
-#![feature(async_fn_in_trait, impl_trait_projections)]
 
 mod common;
 

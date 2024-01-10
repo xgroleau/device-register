@@ -1,6 +1,3 @@
-#![allow(incomplete_features)]
-#![feature(async_fn_in_trait, impl_trait_projections)]
-
 mod common;
 
 use common::{DeviceDriver, DeviceError};

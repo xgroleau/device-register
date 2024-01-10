@@ -4,3 +4,5 @@ members = [
     "device-register-async",
     "device-register-macro",
 ]
+
+resolver = "2"

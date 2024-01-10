@@ -1,6 +1,4 @@
-#![allow(clippy::identity_op)]
-#![allow(incomplete_features)]
-#![feature(async_fn_in_trait, impl_trait_projections)]
+#![allow(clippy::identity_op, unused_braces)]
 
 #[path = "./common.rs"]
 mod common;

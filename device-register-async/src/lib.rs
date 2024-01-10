@@ -1,12 +1,7 @@
-//! [![crates.io](https://img.shields.io/crates/v/device-register-async)](https://crates.io/crates/device-register-async) [![documentation](https://docs.rs/device-register-async/badge.svg)](https://docs.rs/device-register-async)
-//!
-//! An async version of the trait from the crate [device-register](device_register)
-//! Note that you will need to use nightly and
-//! enable and `type_alias_impl_trait` features.
+#![doc = include_str!("../README.md")]
 #![no_std]
 #![deny(unsafe_code, missing_docs)]
-#![allow(incomplete_features)]
-#![feature(async_fn_in_trait, impl_trait_projections)]
+#![allow(async_fn_in_trait)]
 
 pub use device_register;
 use device_register::{EditableRegister, ReadableRegister, Register, WritableRegister};

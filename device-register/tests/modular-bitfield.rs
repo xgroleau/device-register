@@ -1,4 +1,5 @@
-#![allow(clippy::identity_op)]
+#![allow(clippy::identity_op, unused_braces)]
+
 #[path = "./common.rs"]
 mod common;
 
